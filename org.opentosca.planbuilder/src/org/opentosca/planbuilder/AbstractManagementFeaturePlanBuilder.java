@@ -12,7 +12,6 @@ import java.util.Set;
 import org.opentosca.planbuilder.model.plan.AbstractActivity;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.Link;
-import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.ActivityType;
 import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
 import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
@@ -24,11 +23,6 @@ import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractTopologyTemplate;
 
 public abstract class AbstractManagementFeaturePlanBuilder extends AbstractSimplePlanBuilder {
-
-    @Override
-    public PlanType createdPlanType() {
-        return PlanType.MANAGE;
-    }
 
     /**
      * Generates the Management Order Graph (MOG) for the given ServiceTemplate and the given Management

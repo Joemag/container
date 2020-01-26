@@ -6,6 +6,7 @@ import java.util.List;
 
 import javax.xml.namespace.QName;
 
+import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.AbstractSimplePlanBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELBackupManagementProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELBuildProcessBuilder;
@@ -20,7 +21,7 @@ import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
-import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
+import org.opentosca.planbuilder.model.utils.ModelUtils;
 
 /**
  * <p>
@@ -34,7 +35,6 @@ import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
  *
  */
 public abstract class AbstractImporter {
-
 
     protected AbstractPlan buildAdaptationPlan(final String csarName, final AbstractDefinitions definitions,
                                                final QName serviceTemplateId,
@@ -63,8 +63,6 @@ public abstract class AbstractImporter {
                                                  targetCsarName, targetDefinitions,
                                                  targetDefinitions.getServiceTemplates().get(0).getQName()));
 
-
-
         return plans;
     }
 
@@ -85,7 +83,6 @@ public abstract class AbstractImporter {
         if (!sitAwareBuilder.buildPlans(csarName, defs).isEmpty()) {
             buildPlanBuilder = sitAwareBuilder;
         }
-
 
         // FIXME: This does not work for me (Michael W. - 2018-02-19)
         // if (!this.hasPolicies(defs)) {
@@ -118,18 +115,13 @@ public abstract class AbstractImporter {
         plans.addAll(backupPlanBuilder.buildPlans(csarName, defs));
         plans.addAll(testPlanBuilder.buildPlans(csarName, defs));
 
+        // build a plan that provisions all volatile components of a ServiceTemplate if there is at least
+        // one policy defined that indicates a volatile component
+        if (ModelUtils.containsPolicyWithName(defs.getServiceTemplates().get(0), Types.volatilePolicyType)) {
+            // TODO
+            // plans.addAll(new BPELBuildProcessBuilder("_volatileBuildPlan", true).buildPlans(csarName, defs));
+        }
+
         return plans;
     }
-
-    private boolean hasPolicies(final AbstractDefinitions defs) {
-        for (final AbstractServiceTemplate serv : defs.getServiceTemplates()) {
-            for (final AbstractNodeTemplate nodeTemplate : serv.getTopologyTemplate().getNodeTemplates()) {
-                if (!nodeTemplate.getPolicies().isEmpty()) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
 }

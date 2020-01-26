@@ -45,11 +45,6 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
 
     private final static Logger LOG = LoggerFactory.getLogger(AbstractTransformingPlanbuilder.class);
 
-    @Override
-    public PlanType createdPlanType() {
-        return PlanType.MANAGE;
-    }
-
     /**
      * <p>
      * Creates a BuildPlan in WS-BPEL 2.0 by using the the referenced source and target service
@@ -134,11 +129,9 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         final Collection<AbstractRelationshipTemplate> relationsToStart =
             this.getDeployableSubgraph(targetNodeTemplates, getOutgoingRelations(nodesToStart));
 
-        final AbstractPlan startPlan = AbstractBuildPlanBuilder.generatePOG(
-                                                                            "transformStart" + sourceDefinitions.getId()
-                                                                                + "_to_" + targetDefinitions.getId(),
-                                                                            targetDefinitions, targetServiceTemplate,
-                                                                            nodesToStart, relationsToStart, false);
+        final AbstractPlan startPlan =
+            AbstractBuildPlanBuilder.generatePOG("transformStart" + sourceDefinitions.getId() + "_to_"
+                + targetDefinitions.getId(), targetDefinitions, targetServiceTemplate, nodesToStart, relationsToStart);
 
 
         AbstractTransformationPlan transPlan = mergePlans(
@@ -237,11 +230,9 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         nodesToStart.removeAll(getCorrespondingNodes(deployableMaxCommonSubgraph, targetTopology.getNodeTemplates()));
         final Collection<AbstractRelationshipTemplate> relationsToStart = getOutgoingRelations(nodesToStart);
 
-        final AbstractPlan startPlan = AbstractBuildPlanBuilder.generatePOG(
-                                                                            "transformStart" + sourceDefinitions.getId()
-                                                                                + "_to_" + targetDefinitions.getId(),
-                                                                            targetDefinitions, targetServiceTemplate,
-                                                                            nodesToStart, relationsToStart, false);
+        final AbstractPlan startPlan =
+            AbstractBuildPlanBuilder.generatePOG("transformStart" + sourceDefinitions.getId() + "_to_"
+                + targetDefinitions.getId(), targetDefinitions, targetServiceTemplate, nodesToStart, relationsToStart);
 
 
         AbstractTransformationPlan transPlan = mergePlans(
@@ -651,12 +642,6 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         // }
         LOG.debug("Matched node {} with node {} ", node1.getId(), node2.getId());
 
-
-        if (!node1.getId().equals(node2.getId())) {
-            return false;
-        }
-
-        return true;
+        return node1.getId().equals(node2.getId());
     }
-
 }

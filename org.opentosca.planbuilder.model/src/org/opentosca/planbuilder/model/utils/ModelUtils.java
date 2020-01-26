@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
@@ -32,6 +33,7 @@ import org.opentosca.planbuilder.model.tosca.AbstractNodeTypeImplementation;
 import org.opentosca.planbuilder.model.tosca.AbstractOperation;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipType;
+import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -694,5 +696,60 @@ public class ModelUtils {
             LOG.error("Unable to find interface {} for NodeTemplate {}", interfaceName, nodeTemplate.getName());
             return null;
         }
+    }
+
+    /**
+     * Check if the given ServiceTemplate contains a NodeTemplate with a PolicyTemplate of the given
+     * PolicyType
+     *
+     * @param serviceTemplate the ServiceTemplate to check
+     * @param policyType the QName of the PolicyType
+     * @return <code>true</code> if the ServiceTemplate contains a NodeTemplate with a policy of the
+     *         type, <code>false</code> otherwise
+     */
+    public static boolean containsPolicyWithName(final AbstractServiceTemplate serviceTemplate,
+                                                 final QName policyType) {
+        return serviceTemplate.getTopologyTemplate().getNodeTemplates().stream()
+                              .filter(node -> containsPolicyWithName(node, policyType)).findFirst().isPresent();
+    }
+
+    /**
+     * Check if the given NodeTemple contains a PolicyTemplate of the given PolicyType
+     *
+     * @param nodeTemplate the NodeTemplate to check
+     * @param policyType the QName of the PolicyType
+     * @return <code>true</code> if the NodeTemplate contains a policy of the type, <code>false</code>
+     *         otherwise
+     */
+    public static boolean containsPolicyWithName(final AbstractNodeTemplate nodeTemplate, final QName policyType) {
+        return nodeTemplate.getPolicies().stream().filter(policy -> policy.getType().getId().equals(policyType))
+                           .findFirst().isPresent();
+    }
+
+    /**
+     * Get all NodeTemplates of the given ServiceTemplate that have no volatile policy attached.
+     *
+     * @param serviceTemplate the ServiceTemplate to retrieve the NodeTypes from
+     * @return a List of all non-volatile NodeTemplates
+     */
+    public static List<AbstractNodeTemplate> getNonVolatileNodeTemplates(final AbstractServiceTemplate serviceTemplate) {
+        return serviceTemplate.getTopologyTemplate().getNodeTemplates().stream()
+                              .filter(node -> !containsPolicyWithName(node, Types.volatilePolicyType))
+                              .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all RelationshipTemplates of the given ServiceTemplate that have no volatile source and
+     * target NodeTemplate.
+     *
+     * @param serviceTemplate the ServiceTemplate to retrieve the RelationshipTemplates from
+     * @return a List of all non-volatile RelationshipTemplates
+     */
+    public static List<AbstractRelationshipTemplate> getNonVolatileRelationshipTemplates(final AbstractServiceTemplate serviceTemplate) {
+        return serviceTemplate.getTopologyTemplate().getRelationshipTemplates().stream()
+                              .filter(relation -> !containsPolicyWithName(relation.getSource(),
+                                                                          Types.volatilePolicyType)
+                                  && !containsPolicyWithName(relation.getTarget(), Types.volatilePolicyType))
+                              .collect(Collectors.toList());
     }
 }

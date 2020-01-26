@@ -144,7 +144,7 @@ public class BPELSituationAwareBuildProcessBuilder extends AbstractBuildPlanBuil
 
             final AbstractPlan buildPlan =
                 BPELSituationAwareBuildProcessBuilder.generatePOG(new QName(processNamespace, processName).toString(),
-                                                                  definitions, serviceTemplate, false);
+                                                                  definitions, serviceTemplate);
 
             LOG.debug("Generated the following abstract prov plan: ");
             LOG.debug(buildPlan.toString());
@@ -261,8 +261,7 @@ public class BPELSituationAwareBuildProcessBuilder extends AbstractBuildPlanBuil
     }
 
     private Map<AbstractNodeTemplate, Collection<AbstractPolicy>> getSituationPolicies(final AbstractServiceTemplate serviceTemplate) {
-        final Map<AbstractNodeTemplate, Collection<AbstractPolicy>> nodeToPolicies =
-            new HashMap<>();
+        final Map<AbstractNodeTemplate, Collection<AbstractPolicy>> nodeToPolicies = new HashMap<>();
         for (final AbstractNodeTemplate nodeTemplate : serviceTemplate.getTopologyTemplate().getNodeTemplates()) {
             final Collection<AbstractPolicy> situationPolicies = new HashSet<>();
             for (final AbstractPolicy policy : nodeTemplate.getPolicies()) {

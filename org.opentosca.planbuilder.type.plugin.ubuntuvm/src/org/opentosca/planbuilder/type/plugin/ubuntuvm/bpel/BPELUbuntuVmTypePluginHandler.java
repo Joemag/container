@@ -15,7 +15,6 @@ import org.opentosca.container.core.tosca.convention.Properties;
 import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.core.bpel.context.BPELPlanContext;
 import org.opentosca.planbuilder.core.bpel.fragments.BPELProcessFragments;
-import org.opentosca.planbuilder.model.plan.bpel.BPELScope.BPELScopePhaseType;
 import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractPolicy;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
@@ -46,13 +45,6 @@ import org.xml.sax.SAXException;
 public class BPELUbuntuVmTypePluginHandler implements UbuntuVmTypePluginHandler<BPELPlanContext> {
 
     private final static org.slf4j.Logger LOG = LoggerFactory.getLogger(BPELUbuntuVmTypePluginHandler.class);
-
-    public static final QName noPublicAccessPolicyType =
-        new QName("http://opentosca.org/policytypes", "NoPublicAccessPolicy");
-    public static final QName publicAccessPolicyType =
-        new QName("http://opentosca.org/policytypes", "PublicAccessPolicy");
-    public static final QName onlyModeledPortsPolicyType =
-        new QName("http://opentosca.org/policytypes", "OnlyModeledPortsPolicyType");
 
     // create method external input parameters without CorrelationId (old)
     private final static String[] createEC2InstanceExternalInputParams =
@@ -417,7 +409,8 @@ public class BPELUbuntuVmTypePluginHandler implements UbuntuVmTypePluginHandler<
     }
 
     public boolean handleTerminateWithCloudProviderInterface(final BPELPlanContext context,
-                                                             final AbstractNodeTemplate nodeTemplate, Element elementToAppendTo) {
+                                                             final AbstractNodeTemplate nodeTemplate,
+                                                             final Element elementToAppendTo) {
         final List<AbstractNodeTemplate> infraNodes = context.getInfrastructureNodes();
         for (final AbstractNodeTemplate infraNode : infraNodes) {
             if (org.opentosca.container.core.tosca.convention.Utils.isSupportedCloudProviderNodeType(infraNode.getType()
@@ -425,17 +418,18 @@ public class BPELUbuntuVmTypePluginHandler implements UbuntuVmTypePluginHandler<
                 // append logic to call terminateVM method on the
                 // node
 
-                AbstractNodeTemplate ubuntuNode = context.getNodeTemplate();
-                AbstractNodeTemplate hypervisorNode = infraNode;
+                final AbstractNodeTemplate ubuntuNode = context.getNodeTemplate();
+                final AbstractNodeTemplate hypervisorNode = infraNode;
 
                 final Map<String, Variable> inputs = new HashMap<>();
                 final Map<String, Variable> outputs = new HashMap<>();
 
-                Variable hypervisorTenant = context.getPropertyVariable(hypervisorNode, "HypervisorTenantID");
-                Variable hypervisorEndpoint = context.getPropertyVariable(hypervisorNode, "HypervisorEndpoint");
-                Variable VMInstanceID = context.getPropertyVariable(ubuntuNode, "VMInstanceID");
-                Variable hypervisorUserName = context.getPropertyVariable(hypervisorNode, "HypervisorUserName");
-                Variable hypervisorUserPassword = context.getPropertyVariable(hypervisorNode, "HypervisorUserPassword");
+                final Variable hypervisorTenant = context.getPropertyVariable(hypervisorNode, "HypervisorTenantID");
+                final Variable hypervisorEndpoint = context.getPropertyVariable(hypervisorNode, "HypervisorEndpoint");
+                final Variable VMInstanceID = context.getPropertyVariable(ubuntuNode, "VMInstanceID");
+                final Variable hypervisorUserName = context.getPropertyVariable(hypervisorNode, "HypervisorUserName");
+                final Variable hypervisorUserPassword =
+                    context.getPropertyVariable(hypervisorNode, "HypervisorUserPassword");
 
                 inputs.put("HypervisorTenantID", hypervisorTenant);
                 inputs.put("HypervisorEndpoint", hypervisorEndpoint);
@@ -444,7 +438,7 @@ public class BPELUbuntuVmTypePluginHandler implements UbuntuVmTypePluginHandler<
                 inputs.put("HypervisorUserPassword", hypervisorUserPassword);
 
 
-                return this.invokerOpPlugin.handle(context, hypervisorNode.getId(),true,
+                return this.invokerOpPlugin.handle(context, hypervisorNode.getId(), true,
                                                    org.opentosca.container.core.tosca.convention.Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_CLOUDPROVIDER_TERMINATEVM,
                                                    org.opentosca.container.core.tosca.convention.Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_CLOUDPROVIDER,
                                                    inputs, outputs, elementToAppendTo);
@@ -628,8 +622,8 @@ public class BPELUbuntuVmTypePluginHandler implements UbuntuVmTypePluginHandler<
 
         // check if there is an access policy attached
         for (final AbstractPolicy policy : nodeTemplate.getPolicies()) {
-            if (policy.getType().getId().equals(this.noPublicAccessPolicyType)
-                | policy.getType().getId().equals(this.publicAccessPolicyType)) {
+            if (policy.getType().getId().equals(Types.noPublicAccessPolicyType)
+                | policy.getType().getId().equals(Types.publicAccessPolicyType)) {
                 final Element policyPropertyRootElement = policy.getProperties().getDOMElement();
                 if (policyPropertyRootElement.getLocalName().equals("SecurityGroup")) {
                     final String securityGroup = policyPropertyRootElement.getTextContent();
@@ -694,11 +688,12 @@ public class BPELUbuntuVmTypePluginHandler implements UbuntuVmTypePluginHandler<
                                     Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_OPERATINGSYSTEM_WAITFORAVAIL,
                                     Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_OPERATINGSYSTEM, startRequestInputParams,
                                     startRequestOutputParams, context.getProvisioningPhaseElement());
-        
-        this.handleTerminateWithCloudProviderInterface(context, ubuntuNodeTemplate, context.getProvisioningCompensationPhaseElement());
+
+        handleTerminateWithCloudProviderInterface(context, ubuntuNodeTemplate,
+                                                  context.getProvisioningCompensationPhaseElement());
 
         for (final AbstractPolicy policy : nodeTemplate.getPolicies()) {
-            if (policy.getType().getId().equals(this.onlyModeledPortsPolicyType)) {
+            if (policy.getType().getId().equals(Types.onlyModeledPortsPolicyType)) {
                 final List<Variable> modeledPortsVariables = fetchModeledPortsOfInfrastructure(context, nodeTemplate);
                 modeledPortsVariables.add(context.createGlobalStringVariable("vmSshPort", "22"));
                 addIpTablesScriptLogic(context, modeledPortsVariables, serverIpPropWrapper, sshUserVariable,

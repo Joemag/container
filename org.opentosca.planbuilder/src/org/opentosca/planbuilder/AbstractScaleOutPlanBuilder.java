@@ -10,7 +10,6 @@ import java.util.Map;
 import org.opentosca.planbuilder.model.plan.AbstractActivity;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.Link;
-import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.ActivityType;
 import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
 import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
@@ -30,13 +29,6 @@ import org.opentosca.planbuilder.model.utils.ModelUtils;
  */
 public abstract class AbstractScaleOutPlanBuilder extends AbstractSimplePlanBuilder {
 
-
-    @Override
-    public PlanType createdPlanType() {
-        return PlanType.MANAGE;
-    }
-
-
     public AbstractPlan generateSOG(final String id, final AbstractDefinitions defintions,
                                     final AbstractServiceTemplate serviceTemplate,
                                     final ScalingPlanDefinition scalingPlanDefinition) {
@@ -44,7 +36,7 @@ public abstract class AbstractScaleOutPlanBuilder extends AbstractSimplePlanBuil
 
         final AbstractPlan abstractScaleOutPlan =
             AbstractBuildPlanBuilder.generatePOG(id, defintions, serviceTemplate, scalingPlanDefinition.nodeTemplates,
-                                                 scalingPlanDefinition.relationshipTemplates, false);
+                                                 scalingPlanDefinition.relationshipTemplates);
         abstractScaleOutPlan.setType(org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType.MANAGE);
 
         // add instance selection activties by starting for each node strat selection
@@ -113,7 +105,6 @@ public abstract class AbstractScaleOutPlanBuilder extends AbstractSimplePlanBuil
                     }
                 }
             }
-
         }
 
         return abstractScaleOutPlan;
@@ -143,7 +134,5 @@ public abstract class AbstractScaleOutPlanBuilder extends AbstractSimplePlanBuil
             pathToAdd.add(infrastructureEdge);
             findOutgoingInfrastructurePaths(paths, infrastructureEdge.getTarget());
         }
-
     }
-
 }

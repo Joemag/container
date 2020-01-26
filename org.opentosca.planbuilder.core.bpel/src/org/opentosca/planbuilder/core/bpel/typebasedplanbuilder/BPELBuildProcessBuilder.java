@@ -51,10 +51,10 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
     final static Logger LOG = LoggerFactory.getLogger(BPELBuildProcessBuilder.class);
 
     // class for initializing properties inside the plan
-    private PropertyVariableHandler propertyInitializer;
+    private final PropertyVariableHandler propertyInitializer;
     // class for initializing output with boundarydefinitions of a
     // serviceTemplate
-    private ServiceTemplateBoundaryPropertyMappingsToOutputHandler propertyOutputInitializer;
+    private final ServiceTemplateBoundaryPropertyMappingsToOutputHandler propertyOutputInitializer;
     // adds serviceInstance Variable and instanceDataAPIUrl to buildPlans
 
     private SimplePlanBuilderServiceInstanceHandler serviceInstanceInitializer;
@@ -65,7 +65,7 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
 
     // class for finalizing build plans (e.g when some template didn't receive
     // some provisioning logic and they must be filled with empty elements)
-    private BPELFinalizer finalizer;
+    private final BPELFinalizer finalizer;
 
     private BPELPlanHandler planHandler;
 
@@ -75,40 +75,7 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
 
     private final EmptyPropertyToInputHandler emptyPropInit = new EmptyPropertyToInputHandler();
 
-    private final String planSuffix;
-
-    private final boolean volatileBuildPlan;
-
-    /**
-     * <p>
-     * Default Constructor
-     * </p>
-     */
     public BPELBuildProcessBuilder() {
-        this.planSuffix = "_buildPlan";
-        this.volatileBuildPlan = false;
-        initialize();
-    }
-
-    /**
-     * Create a build plan builder for non-volatile or volatile components depending on the given
-     * attributes.
-     *
-     * @param planSuffix The suffix to append to the plan name
-     * @param volatilePlan <code>true</code> if the build plans created by this plan builder should only
-     *        provision the volatile components of the ServiceTemplates, <code>false</code> if it should
-     *        provision all other components.
-     */
-    public BPELBuildProcessBuilder(final String planSuffix, final boolean volatileBuildPlan) {
-        this.planSuffix = planSuffix;
-        this.volatileBuildPlan = volatileBuildPlan;
-        initialize();
-    }
-
-    /**
-     * Initialize the required handlers for the plan builder
-     */
-    public void initialize() {
         try {
             this.planHandler = new BPELPlanHandler();
             this.serviceInstanceInitializer = new SimplePlanBuilderServiceInstanceHandler();
@@ -146,12 +113,12 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
         if (namespace.equals(serviceTemplate.getQName().getNamespaceURI())
             && serviceTemplate.getId().equals(serviceTemplate.getQName().getLocalPart())) {
 
-            final String processName = ModelUtils.makeValidNCName(serviceTemplate.getId() + this.planSuffix);
-            final String processNamespace = serviceTemplate.getTargetNamespace() + this.planSuffix;
+            final String processName = ModelUtils.makeValidNCName(serviceTemplate.getId() + "_buildPlan");
+            final String processNamespace = serviceTemplate.getTargetNamespace() + "_buildPlan";
 
             final AbstractPlan buildPlan =
                 BPELBuildProcessBuilder.generatePOG(new QName(processNamespace, processName).toString(), definitions,
-                                                    serviceTemplate, this.volatileBuildPlan);
+                                                    serviceTemplate);
 
             LOG.debug("Generated the following abstract prov plan: ");
             LOG.debug(buildPlan.toString());
@@ -166,8 +133,6 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
 
             this.nodeRelationInstanceHandler.addInstanceURLVarToTemplatePlans(newBuildPlan, serviceTemplate);
             this.nodeRelationInstanceHandler.addInstanceIDVarToTemplatePlans(newBuildPlan, serviceTemplate);
-
-            // newBuildPlan.setCsarName(csarName);
 
             this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,
                                                newBuildPlan);
@@ -215,8 +180,6 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
                                                                                  this.serviceInstanceInitializer.findPlanInstanceUrlVariableName(newBuildPlan));
 
             this.sitRegistrationPlugin.handle(serviceTemplate, newBuildPlan);
-
-
 
             this.finalizer.finalize(newBuildPlan);
             return newBuildPlan;
@@ -270,8 +233,6 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
                             final String serviceInstanceUrl, final String serviceInstanceID,
                             final String serviceTemplateUrl, final String csarFileName) {
 
-
-
         for (final BPELScope bpelScope : buildPlan.getTemplateBuildPlans()) {
             final BPELPlanContext context =
                 new BPELPlanContext(buildPlan, bpelScope, map, buildPlan.getServiceTemplate(), serviceInstanceUrl,
@@ -303,5 +264,4 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
             }
         }
     }
-
 }

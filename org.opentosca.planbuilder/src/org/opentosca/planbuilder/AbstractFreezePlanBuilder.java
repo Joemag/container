@@ -13,7 +13,6 @@ import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.model.plan.AbstractActivity;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.Link;
-import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.ActivityType;
 import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
 import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
@@ -25,16 +24,6 @@ import org.opentosca.planbuilder.model.tosca.AbstractTopologyTemplate;
 import org.opentosca.planbuilder.model.utils.ModelUtils;
 
 public abstract class AbstractFreezePlanBuilder extends AbstractSimplePlanBuilder {
-
-    QName statefulComponentPolicy = new QName("http://opentosca.org/policytypes", "StatefulComponent");
-    QName freezableComponentPolicy = new QName("http://opentosca.org/policytypes", "FreezableComponent");
-
-
-    @Override
-    public PlanType createdPlanType() {
-        return PlanType.TERMINATE;
-    }
-
 
     protected AbstractPlan generateFOG(final String id, final AbstractDefinitions definitions,
                                        final AbstractServiceTemplate serviceTemplate) {
@@ -64,7 +53,6 @@ public abstract class AbstractFreezePlanBuilder extends AbstractSimplePlanBuilde
             // else we ignore, because there is nothing to do, if the component is only stateful.
             // It might be the case that it is accessed by an underlying component which is freezable, hence, it
             // should not be terminated beforehand.
-
         }
 
         for (final AbstractRelationshipTemplate relationshipTemplate : topology.getRelationshipTemplates()) {
@@ -92,15 +80,10 @@ public abstract class AbstractFreezePlanBuilder extends AbstractSimplePlanBuilde
     }
 
     protected boolean hasStatefulComponentPolicy(final AbstractNodeTemplate nodeTemplate) {
-        return hasPolicy(nodeTemplate, this.statefulComponentPolicy);
+        return ModelUtils.containsPolicyWithName(nodeTemplate, Types.statefulComponentPolicy);
     }
 
     protected boolean hasFreezableComponentPolicy(final AbstractNodeTemplate nodeTemplate) {
-        return hasPolicy(nodeTemplate, this.freezableComponentPolicy);
-    }
-
-    private boolean hasPolicy(final AbstractNodeTemplate nodeTemplate, final QName policyType) {
-        return nodeTemplate.getPolicies().stream().filter(policy -> policy.getType().getId().equals(policyType))
-                           .findFirst().isPresent();
+        return ModelUtils.containsPolicyWithName(nodeTemplate, Types.freezableComponentPolicy);
     }
 }

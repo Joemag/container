@@ -22,6 +22,7 @@ Import-Package: com.ibm.wsdl,
  org.opentosca.container.core.model.csar.id,
  org.opentosca.container.core.next.xml,
  org.opentosca.container.core.service,
+ org.opentosca.container.core.tosca.convention,
  org.opentosca.planbuilder.csarhandler,
  org.osgi.framework;version="1.8.0",
  org.slf4j

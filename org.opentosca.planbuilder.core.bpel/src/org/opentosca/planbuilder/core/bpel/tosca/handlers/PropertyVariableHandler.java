@@ -54,8 +54,8 @@ public class PropertyVariableHandler {
     public Property2VariableMapping initializePropertiesAsVariables(final BPELPlan buildPlan,
                                                                     final AbstractServiceTemplate serviceTemplate) {
         return this.initializePropertiesAsVariables(buildPlan, serviceTemplate,
-                                                    serviceTemplate.getTopologyTemplate().getNodeTemplates(),
-                                                    serviceTemplate.getTopologyTemplate().getRelationshipTemplates());
+                                                    ModelUtils.getNonVolatileNodeTemplates(serviceTemplate),
+                                                    ModelUtils.getNonVolatileRelationshipTemplates(serviceTemplate));
     }
 
     public Property2VariableMapping initializePropertiesAsVariables(final BPELPlan plan,
