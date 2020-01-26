@@ -44,7 +44,7 @@ public abstract class AbstractScaleOutPlanBuilder extends AbstractSimplePlanBuil
 
         final AbstractPlan abstractScaleOutPlan =
             AbstractBuildPlanBuilder.generatePOG(id, defintions, serviceTemplate, scalingPlanDefinition.nodeTemplates,
-                                                 scalingPlanDefinition.relationshipTemplates);;
+                                                 scalingPlanDefinition.relationshipTemplates, false);
         abstractScaleOutPlan.setType(org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType.MANAGE);
 
         // add instance selection activties by starting for each node strat selection

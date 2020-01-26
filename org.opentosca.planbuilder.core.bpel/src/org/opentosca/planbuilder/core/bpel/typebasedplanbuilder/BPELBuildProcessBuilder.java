@@ -7,8 +7,6 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.opentosca.planbuilder.AbstractBuildPlanBuilder;
-import org.opentosca.planbuilder.core.bpel.artifactbasednodehandler.BPELScopeBuilder;
-import org.opentosca.planbuilder.core.bpel.artifactbasednodehandler.OperationChain;
 import org.opentosca.planbuilder.core.bpel.context.BPELPlanContext;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELFinalizer;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELPlanHandler;
@@ -21,8 +19,6 @@ import org.opentosca.planbuilder.core.bpel.tosca.handlers.SimplePlanBuilderServi
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.SituationTriggerRegistration;
 import org.opentosca.planbuilder.core.bpel.typebasednodehandler.BPELPluginHandler;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
-import org.opentosca.planbuilder.model.plan.ActivityType;
-import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
 import org.opentosca.planbuilder.model.plan.bpel.BPELScope;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
@@ -31,11 +27,7 @@ import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
 import org.opentosca.planbuilder.model.utils.ModelUtils;
 import org.opentosca.planbuilder.plugins.context.Property2VariableMapping;
-import org.opentosca.planbuilder.plugins.context.PropertyVariable;
-import org.opentosca.planbuilder.plugins.context.Variable;
 import org.opentosca.planbuilder.plugins.typebased.IPlanBuilderPostPhasePlugin;
-import org.opentosca.planbuilder.plugins.typebased.IPlanBuilderPrePhasePlugin;
-import org.opentosca.planbuilder.plugins.typebased.IPlanBuilderTypePlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,10 +51,10 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
     final static Logger LOG = LoggerFactory.getLogger(BPELBuildProcessBuilder.class);
 
     // class for initializing properties inside the plan
-    private final PropertyVariableHandler propertyInitializer;
+    private PropertyVariableHandler propertyInitializer;
     // class for initializing output with boundarydefinitions of a
     // serviceTemplate
-    private final ServiceTemplateBoundaryPropertyMappingsToOutputHandler propertyOutputInitializer;
+    private ServiceTemplateBoundaryPropertyMappingsToOutputHandler propertyOutputInitializer;
     // adds serviceInstance Variable and instanceDataAPIUrl to buildPlans
 
     private SimplePlanBuilderServiceInstanceHandler serviceInstanceInitializer;
@@ -73,15 +65,19 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
 
     // class for finalizing build plans (e.g when some template didn't receive
     // some provisioning logic and they must be filled with empty elements)
-    private final BPELFinalizer finalizer;
+    private BPELFinalizer finalizer;
 
     private BPELPlanHandler planHandler;
 
-    private BPELPluginHandler bpelPluginHandler = new BPELPluginHandler();
+    private final BPELPluginHandler bpelPluginHandler = new BPELPluginHandler();
 
     private NodeRelationInstanceVariablesHandler nodeRelationInstanceHandler;
 
     private final EmptyPropertyToInputHandler emptyPropInit = new EmptyPropertyToInputHandler();
+
+    private final String planSuffix;
+
+    private final boolean volatileBuildPlan;
 
     /**
      * <p>
@@ -89,6 +85,30 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
      * </p>
      */
     public BPELBuildProcessBuilder() {
+        this.planSuffix = "_buildPlan";
+        this.volatileBuildPlan = false;
+        initialize();
+    }
+
+    /**
+     * Create a build plan builder for non-volatile or volatile components depending on the given
+     * attributes.
+     *
+     * @param planSuffix The suffix to append to the plan name
+     * @param volatilePlan <code>true</code> if the build plans created by this plan builder should only
+     *        provision the volatile components of the ServiceTemplates, <code>false</code> if it should
+     *        provision all other components.
+     */
+    public BPELBuildProcessBuilder(final String planSuffix, final boolean volatileBuildPlan) {
+        this.planSuffix = planSuffix;
+        this.volatileBuildPlan = volatileBuildPlan;
+        initialize();
+    }
+
+    /**
+     * Initialize the required handlers for the plan builder
+     */
+    public void initialize() {
         try {
             this.planHandler = new BPELPlanHandler();
             this.serviceInstanceInitializer = new SimplePlanBuilderServiceInstanceHandler();
@@ -100,7 +120,6 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
         catch (final ParserConfigurationException e) {
             BPELBuildProcessBuilder.LOG.error("Error while initializing BuildPlanHandler", e);
         }
-        // TODO seems ugly
         this.propertyInitializer = new PropertyVariableHandler(this.planHandler);
         this.propertyOutputInitializer = new ServiceTemplateBoundaryPropertyMappingsToOutputHandler();
         this.finalizer = new BPELFinalizer();
@@ -115,9 +134,8 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
     @Override
     public BPELPlan buildPlan(final String csarName, final AbstractDefinitions definitions,
                               final AbstractServiceTemplate serviceTemplate) {
+
         // create empty plan from servicetemplate and add definitions
-
-
         String namespace;
         if (serviceTemplate.getTargetNamespace() != null) {
             namespace = serviceTemplate.getTargetNamespace();
@@ -128,11 +146,12 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
         if (namespace.equals(serviceTemplate.getQName().getNamespaceURI())
             && serviceTemplate.getId().equals(serviceTemplate.getQName().getLocalPart())) {
 
-            final String processName = ModelUtils.makeValidNCName(serviceTemplate.getId() + "_buildPlan");
-            final String processNamespace = serviceTemplate.getTargetNamespace() + "_buildPlan";
+            final String processName = ModelUtils.makeValidNCName(serviceTemplate.getId() + this.planSuffix);
+            final String processNamespace = serviceTemplate.getTargetNamespace() + this.planSuffix;
 
             final AbstractPlan buildPlan =
-                this.generatePOG(new QName(processNamespace, processName).toString(), definitions, serviceTemplate);
+                BPELBuildProcessBuilder.generatePOG(new QName(processNamespace, processName).toString(), definitions,
+                                                    serviceTemplate, this.volatileBuildPlan);
 
             LOG.debug("Generated the following abstract prov plan: ");
             LOG.debug(buildPlan.toString());
@@ -165,10 +184,10 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
             this.serviceInstanceInitializer.appendCreateServiceInstanceVarsAndAnitializeWithInstanceDataAPI(newBuildPlan);
 
 
-            String serviceInstanceUrl =
+            final String serviceInstanceUrl =
                 this.serviceInstanceInitializer.findServiceInstanceUrlVariableName(newBuildPlan);
-            String serviceInstanceID = this.serviceInstanceInitializer.findServiceInstanceIdVarName(newBuildPlan);
-            String serviceTemplateUrl =
+            final String serviceInstanceID = this.serviceInstanceInitializer.findServiceInstanceIdVarName(newBuildPlan);
+            final String serviceTemplateUrl =
                 this.serviceInstanceInitializer.findServiceTemplateUrlVariableName(newBuildPlan);
 
             this.emptyPropInit.initializeEmptyPropertiesAsInputParam(newBuildPlan, propMap, serviceInstanceUrl,
@@ -187,13 +206,18 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
                                                                           newBuildPlan.getBpelMainSequenceOutputAssignElement(),
                                                                           "CREATED", serviceInstanceUrl);
 
-            this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newBuildPlan, this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newBuildPlan), "ERROR", serviceInstanceUrl);
-            this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newBuildPlan, this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newBuildPlan), "FAILED", this.serviceInstanceInitializer.findPlanInstanceUrlVariableName(newBuildPlan));
-            
+            this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newBuildPlan,
+                                                                                 this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newBuildPlan),
+                                                                                 "ERROR", serviceInstanceUrl);
+            this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newBuildPlan,
+                                                                                 this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newBuildPlan),
+                                                                                 "FAILED",
+                                                                                 this.serviceInstanceInitializer.findPlanInstanceUrlVariableName(newBuildPlan));
+
             this.sitRegistrationPlugin.handle(serviceTemplate, newBuildPlan);
 
-            
-            
+
+
             this.finalizer.finalize(newBuildPlan);
             return newBuildPlan;
         }
@@ -232,8 +256,6 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
         return plans;
     }
 
-    
-
     /**
      * <p>
      * This method assigns plugins to the already initialized BuildPlan and its TemplateBuildPlans.
@@ -244,21 +266,23 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
      * @param map a PropertyMap which contains mappings from Template to Property and to variable name
      *        of inside the BuidlPlan
      */
-    private void runPlugins(final BPELPlan buildPlan, final Property2VariableMapping map, String serviceInstanceUrl,
-                            String serviceInstanceID, String serviceTemplateUrl, String csarFileName) {
+    private void runPlugins(final BPELPlan buildPlan, final Property2VariableMapping map,
+                            final String serviceInstanceUrl, final String serviceInstanceID,
+                            final String serviceTemplateUrl, final String csarFileName) {
 
 
 
         for (final BPELScope bpelScope : buildPlan.getTemplateBuildPlans()) {
-            final BPELPlanContext context = new BPELPlanContext(buildPlan, bpelScope, map, buildPlan.getServiceTemplate(),
-                serviceInstanceUrl, serviceInstanceID, serviceTemplateUrl, csarFileName);
+            final BPELPlanContext context =
+                new BPELPlanContext(buildPlan, bpelScope, map, buildPlan.getServiceTemplate(), serviceInstanceUrl,
+                    serviceInstanceID, serviceTemplateUrl, csarFileName);
             if (bpelScope.getNodeTemplate() != null) {
 
                 final AbstractNodeTemplate nodeTemplate = bpelScope.getNodeTemplate();
 
                 // if this nodeTemplate has the label running (Property: State=Running), skip
                 // provisioning and just generate instance data handling
-                if (this.isRunning(nodeTemplate)) {
+                if (isRunning(nodeTemplate)) {
                     BPELBuildProcessBuilder.LOG.debug("Skipping the provisioning of NodeTemplate "
                         + bpelScope.getNodeTemplate().getId() + "  beacuse state=running is set.");
                     for (final IPlanBuilderPostPhasePlugin postPhasePlugin : this.pluginRegistry.getPostPlugins()) {
@@ -277,7 +301,6 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
 
                 this.bpelPluginHandler.handleActivity(context, bpelScope, relationshipTemplate);
             }
-
         }
     }
 

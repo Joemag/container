@@ -80,8 +80,6 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
 
     private BPELPlanHandler planHandler;
 
-    private NodeRelationInstanceVariablesHandler instanceInit;
-
     private CorrelationIDInitializer correlationHandler;
 
     private final EmptyPropertyToInputHandler emptyPropInit = new EmptyPropertyToInputHandler();
@@ -95,7 +93,7 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
         try {
             this.planHandler = new BPELPlanHandler();
             this.serviceInstanceHandler = new SimplePlanBuilderServiceInstanceHandler();
-            this.instanceInit = new NodeRelationInstanceVariablesHandler(this.planHandler);
+            new NodeRelationInstanceVariablesHandler(this.planHandler);
             this.correlationHandler = new CorrelationIDInitializer();
 
         }
@@ -128,7 +126,8 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
         final String processNamespace = serviceTemplate.getTargetNamespace() + "_buildPlan";
 
         final AbstractPlan buildPlan =
-            this.generatePOG(new QName(processNamespace, processName).toString(), definitions, serviceTemplate);
+            BPELPolicyAwareBuildProcessBuilder.generatePOG(new QName(processNamespace, processName).toString(),
+                                                           definitions, serviceTemplate, false);
 
         LOG.debug("Generated the following abstract prov plan: ");
         LOG.debug(buildPlan.toString());
@@ -180,9 +179,9 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
         this.serviceInstanceHandler.appendCreateServiceInstanceVarsAndAnitializeWithInstanceDataAPI(newBuildPlan);
 
 
-        String serviceInstanceUrl = this.serviceInstanceHandler.findServiceInstanceUrlVariableName(newBuildPlan);
-        String serviceInstanceId = this.serviceInstanceHandler.findServiceInstanceIdVarName(newBuildPlan);
-        String serviceTemplateUrl = this.serviceInstanceHandler.findServiceTemplateUrlVariableName(newBuildPlan);
+        final String serviceInstanceUrl = this.serviceInstanceHandler.findServiceInstanceUrlVariableName(newBuildPlan);
+        final String serviceInstanceId = this.serviceInstanceHandler.findServiceInstanceIdVarName(newBuildPlan);
+        final String serviceTemplateUrl = this.serviceInstanceHandler.findServiceTemplateUrlVariableName(newBuildPlan);
 
         this.emptyPropInit.initializeEmptyPropertiesAsInputParam(newBuildPlan, propMap, serviceInstanceUrl,
                                                                  serviceInstanceId, serviceTemplateUrl, serviceTemplate,
@@ -192,7 +191,8 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
 
         this.correlationHandler.addCorrellationID(newBuildPlan);
 
-        String serviceInstanceURLVarName = this.serviceInstanceHandler.findServiceInstanceUrlVariableName(newBuildPlan);
+        final String serviceInstanceURLVarName =
+            this.serviceInstanceHandler.findServiceInstanceUrlVariableName(newBuildPlan);
         this.serviceInstanceHandler.appendSetServiceInstanceState(newBuildPlan, newBuildPlan.getBpelMainFlowElement(),
                                                                   "CREATING", serviceInstanceURLVarName);
         this.serviceInstanceHandler.appendSetServiceInstanceState(newBuildPlan,
@@ -245,8 +245,9 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
      * @param map a PropertyMap which contains mappings from Template to Property and to variable name
      *        of inside the BuidlPlan
      */
-    private boolean runPlugins(final BPELPlan buildPlan, final Property2VariableMapping map, String serviceInstanceUrl,
-                               String serviceInstanceId, String serviceTemplateUrl, String csarName) {
+    private boolean runPlugins(final BPELPlan buildPlan, final Property2VariableMapping map,
+                               final String serviceInstanceUrl, final String serviceInstanceId,
+                               final String serviceTemplateUrl, final String csarName) {
 
 
         for (final BPELScope templatePlan : buildPlan.getTemplateBuildPlans()) {
@@ -255,13 +256,14 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
                 // handling nodetemplate
                 final AbstractNodeTemplate nodeTemplate = templatePlan.getNodeTemplate();
                 BPELPolicyAwareBuildProcessBuilder.LOG.debug("Trying to handle NodeTemplate " + nodeTemplate.getId());
-                final BPELPlanContext context = new BPELPlanContext(buildPlan,templatePlan, map, buildPlan.getServiceTemplate(),
-                    serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
+                final BPELPlanContext context =
+                    new BPELPlanContext(buildPlan, templatePlan, map, buildPlan.getServiceTemplate(),
+                        serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
                 // check if we have a generic plugin to handle the template
                 // Note: if a generic plugin fails during execution the
                 // TemplateBuildPlan is broken!
 
-                for (IPlanBuilderPrePhasePlugin prePhasePlugin : this.pluginRegistry.getPrePlugins()) {
+                for (final IPlanBuilderPrePhasePlugin prePhasePlugin : this.pluginRegistry.getPrePlugins()) {
                     if (prePhasePlugin.canHandleCreate(nodeTemplate)) {
                         prePhasePlugin.handleCreate(context, nodeTemplate);
                     }
@@ -369,8 +371,9 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
             } else {
                 // handling relationshiptemplate
                 final AbstractRelationshipTemplate relationshipTemplate = templatePlan.getRelationshipTemplate();
-                final BPELPlanContext context = new BPELPlanContext(buildPlan,templatePlan, map, buildPlan.getServiceTemplate(),
-                    serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
+                final BPELPlanContext context =
+                    new BPELPlanContext(buildPlan, templatePlan, map, buildPlan.getServiceTemplate(),
+                        serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
 
                 // check if we have a generic plugin to handle the template
                 // Note: if a generic plugin fails during execution the
@@ -380,7 +383,8 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
 
                     BPELPolicyAwareBuildProcessBuilder.LOG.info("Handling RelationshipTemplate {} with generic plugin",
                                                                 relationshipTemplate.getId());
-                    IPlanBuilderTypePlugin plugin = this.pluginRegistry.findTypePluginForCreation(relationshipTemplate);
+                    final IPlanBuilderTypePlugin plugin =
+                        this.pluginRegistry.findTypePluginForCreation(relationshipTemplate);
                     handled = this.pluginRegistry.handleCreateWithTypePlugin(context, relationshipTemplate, plugin);
 
                 } else {

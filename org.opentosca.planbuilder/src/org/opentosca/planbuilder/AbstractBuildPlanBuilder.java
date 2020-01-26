@@ -10,13 +10,13 @@ import java.util.Set;
 import javax.xml.namespace.QName;
 
 import org.opentosca.container.core.tosca.convention.Types;
-import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
-import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
 import org.opentosca.planbuilder.model.plan.AbstractActivity;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.Link;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.ActivityType;
+import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
+import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
@@ -26,25 +26,19 @@ import org.opentosca.planbuilder.model.utils.ModelUtils;;
 
 public abstract class AbstractBuildPlanBuilder extends AbstractSimplePlanBuilder {
 
-
     @Override
     public PlanType createdPlanType() {
         return PlanType.BUILD;
     }
 
-
     protected static AbstractPlan generatePOG(final String id, final AbstractDefinitions definitions,
                                               final AbstractServiceTemplate serviceTemplate,
                                               final Collection<AbstractNodeTemplate> nodeTemplates,
-                                              final Collection<AbstractRelationshipTemplate> relationshipTemplates) {
+                                              final Collection<AbstractRelationshipTemplate> relationshipTemplates,
+                                              final boolean volatileBuildPlan) {
         final Collection<AbstractActivity> activities = new ArrayList<>();
         final Set<Link> links = new HashSet<>();
-        final Map<AbstractNodeTemplate, AbstractActivity> nodeMapping = new HashMap<>();
-        final Map<AbstractRelationshipTemplate, AbstractActivity> relationMapping = new HashMap<>();
-        generatePOGActivitesAndLinks(activities, links, nodeMapping, nodeTemplates, relationMapping,
-                                     relationshipTemplates);
-
-        // this.cleanLooseEdges(links);
+        generatePOGActivitesAndLinks(activities, links, nodeTemplates, relationshipTemplates, volatileBuildPlan);
 
         final AbstractPlan plan =
             new AbstractPlan(id, AbstractPlan.PlanType.BUILD, definitions, serviceTemplate, activities, links) {
@@ -54,17 +48,15 @@ public abstract class AbstractBuildPlanBuilder extends AbstractSimplePlanBuilder
     }
 
     protected static AbstractPlan generatePOG(final String id, final AbstractDefinitions definitions,
-                                              final AbstractServiceTemplate serviceTemplate) {
+                                              final AbstractServiceTemplate serviceTemplate,
+                                              final boolean volatileBuildPlan) {
 
         final Collection<AbstractActivity> activities = new ArrayList<>();
         final Set<Link> links = new HashSet<>();
-        final Map<AbstractNodeTemplate, AbstractActivity> nodeMapping = new HashMap<>();
-        final Map<AbstractRelationshipTemplate, AbstractActivity> relationMapping = new HashMap<>();
 
         final AbstractTopologyTemplate topology = serviceTemplate.getTopologyTemplate();
-
-        generatePOGActivitesAndLinks(activities, links, nodeMapping, topology.getNodeTemplates(), relationMapping,
-                                     topology.getRelationshipTemplates());
+        generatePOGActivitesAndLinks(activities, links, topology.getNodeTemplates(),
+                                     topology.getRelationshipTemplates(), volatileBuildPlan);
 
         final AbstractPlan plan =
             new AbstractPlan(id, AbstractPlan.PlanType.BUILD, definitions, serviceTemplate, activities, links) {
@@ -75,15 +67,19 @@ public abstract class AbstractBuildPlanBuilder extends AbstractSimplePlanBuilder
 
     private static void generatePOGActivitesAndLinks(final Collection<AbstractActivity> activities,
                                                      final Set<Link> links,
-                                                     final Map<AbstractNodeTemplate, AbstractActivity> nodeActivityMapping,
                                                      final Collection<AbstractNodeTemplate> nodeTemplates,
-                                                     final Map<AbstractRelationshipTemplate, AbstractActivity> relationActivityMapping,
-                                                     final Collection<AbstractRelationshipTemplate> relationshipTemplates) {
+                                                     final Collection<AbstractRelationshipTemplate> relationshipTemplates,
+                                                     final boolean volatileBuildPlan) {
+        final Map<AbstractNodeTemplate, AbstractActivity> nodeMapping = new HashMap<>();
+        final Map<AbstractRelationshipTemplate, AbstractActivity> relationMapping = new HashMap<>();
+
+        // TODO: filter volatile/non-volatile components depending on parameter
+
         for (final AbstractNodeTemplate nodeTemplate : nodeTemplates) {
             final AbstractActivity activity = new NodeTemplateActivity(nodeTemplate.getId() + "_provisioning_activity",
                 ActivityType.PROVISIONING, nodeTemplate);
             activities.add(activity);
-            nodeActivityMapping.put(nodeTemplate, activity);
+            nodeMapping.put(nodeTemplate, activity);
         }
 
         for (final AbstractRelationshipTemplate relationshipTemplate : relationshipTemplates) {
@@ -91,33 +87,31 @@ public abstract class AbstractBuildPlanBuilder extends AbstractSimplePlanBuilder
                 new RelationshipTemplateActivity(relationshipTemplate.getId() + "_provisioning_activity",
                     ActivityType.PROVISIONING, relationshipTemplate);
             activities.add(activity);
-            relationActivityMapping.put(relationshipTemplate, activity);
+            relationMapping.put(relationshipTemplate, activity);
         }
 
         for (final AbstractRelationshipTemplate relationshipTemplate : relationshipTemplates) {
-            final AbstractActivity activity = relationActivityMapping.get(relationshipTemplate);
+            final AbstractActivity activity = relationMapping.get(relationshipTemplate);
             final QName baseType = ModelUtils.getRelationshipBaseType(relationshipTemplate);
-            
-            AbstractActivity sourceActivity = nodeActivityMapping.get(relationshipTemplate.getSource());
-            AbstractActivity targetActivity = nodeActivityMapping.get(relationshipTemplate.getTarget());
+
+            final AbstractActivity sourceActivity = nodeMapping.get(relationshipTemplate.getSource());
+            final AbstractActivity targetActivity = nodeMapping.get(relationshipTemplate.getTarget());
             if (baseType.equals(Types.connectsToRelationType)) {
-                if(sourceActivity != null) {                    
+                if (sourceActivity != null) {
                     links.add(new Link(sourceActivity, activity));
                 }
-                if(targetActivity != null) {                    
+                if (targetActivity != null) {
                     links.add(new Link(targetActivity, activity));
                 }
             } else if (baseType.equals(Types.dependsOnRelationType) | baseType.equals(Types.hostedOnRelationType)
                 | baseType.equals(Types.deployedOnRelationType)) {
-                if(targetActivity != null) {                    
-                    links.add(new Link(targetActivity, activity));
+                    if (targetActivity != null) {
+                        links.add(new Link(targetActivity, activity));
+                    }
+                    if (sourceActivity != null) {
+                        links.add(new Link(activity, sourceActivity));
+                    }
                 }
-                if(sourceActivity != null) {                    
-                    links.add(new Link(activity, sourceActivity));
-                }
-            }
-
         }
     }
-
 }
