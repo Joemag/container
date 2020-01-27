@@ -48,11 +48,20 @@ public class PropertyVariableHandler {
      * Properties and variables
      *
      * @param buildPlan the BuildPlan to initialize
+     * @param includeVolatile <code>true</code> if properties of Node- and RelationshipTemplates that
+     *        have an attached volatile policy should be initialized too, <code>false</code> otherwise
      * @return a PropertyMap which holds mappings from Template to Template Property and BuildPlan
      *         variable
      */
     public Property2VariableMapping initializePropertiesAsVariables(final BPELPlan buildPlan,
-                                                                    final AbstractServiceTemplate serviceTemplate) {
+                                                                    final AbstractServiceTemplate serviceTemplate,
+                                                                    final boolean includeVolatile) {
+        if (includeVolatile) {
+            return this.initializePropertiesAsVariables(buildPlan, serviceTemplate,
+                                                        serviceTemplate.getTopologyTemplate().getNodeTemplates(),
+                                                        serviceTemplate.getTopologyTemplate()
+                                                                       .getRelationshipTemplates());
+        }
         return this.initializePropertiesAsVariables(buildPlan, serviceTemplate,
                                                     ModelUtils.getNonVolatileNodeTemplates(serviceTemplate),
                                                     ModelUtils.getNonVolatileRelationshipTemplates(serviceTemplate));

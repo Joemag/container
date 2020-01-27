@@ -95,7 +95,7 @@ public class BPELTerminationProcessBuilder extends AbstractTerminationPlanBuilde
         this.instanceVarsHandler.addInstanceIDVarToTemplatePlans(newTerminationPlan, serviceTemplate);
 
         final Property2VariableMapping propMap =
-            this.propertyInitializer.initializePropertiesAsVariables(newTerminationPlan, serviceTemplate);
+            this.propertyInitializer.initializePropertiesAsVariables(newTerminationPlan, serviceTemplate, false);
 
         // instanceDataAPI handling is done solely trough this extension
         this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,

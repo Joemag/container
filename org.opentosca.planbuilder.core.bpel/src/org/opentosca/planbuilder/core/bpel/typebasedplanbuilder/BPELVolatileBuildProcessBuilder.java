@@ -10,7 +10,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.opentosca.container.core.tosca.convention.Interfaces;
 import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.AbstractVolatilePlanBuilder;
+import org.opentosca.planbuilder.core.bpel.handlers.BPELFinalizer;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELPlanHandler;
+import org.opentosca.planbuilder.core.bpel.tosca.handlers.NodeRelationInstanceVariablesHandler;
+import org.opentosca.planbuilder.core.bpel.tosca.handlers.PropertyVariableHandler;
+import org.opentosca.planbuilder.core.bpel.tosca.handlers.SimplePlanBuilderServiceInstanceHandler;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
@@ -31,9 +35,21 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
 
     private BPELPlanHandler planHandler;
 
+    private NodeRelationInstanceVariablesHandler nodeRelationInstanceHandler;
+
+    private final BPELFinalizer finalizer;
+
+    private SimplePlanBuilderServiceInstanceHandler serviceInstanceHandler;
+
+    private PropertyVariableHandler propertyInitializer;
+
     public BPELVolatileBuildProcessBuilder() {
+        this.finalizer = new BPELFinalizer();
         try {
             this.planHandler = new BPELPlanHandler();
+            this.nodeRelationInstanceHandler = new NodeRelationInstanceVariablesHandler(this.planHandler);
+            this.serviceInstanceHandler = new SimplePlanBuilderServiceInstanceHandler();
+            this.propertyInitializer = new PropertyVariableHandler(this.planHandler);
         }
         catch (final ParserConfigurationException e) {
             LOG.error("Error while initializing BPELPlanHandler", e);
@@ -44,23 +60,45 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
     public BPELPlan buildPlan(final String csarName, final AbstractDefinitions definitions,
                               final AbstractServiceTemplate serviceTemplate) {
 
+        // generate abstract plan with activities on volatile components and their connected relations
         final String processName = ModelUtils.makeValidNCName(serviceTemplate.getId() + "_volatileBuildPlan");
         final String processNamespace = serviceTemplate.getTargetNamespace() + "_volatileBuildPlan";
-
         final AbstractPlan volatileBuildPlan =
             AbstractVolatilePlanBuilder.generateVOG(new QName(processName, processNamespace).toString(), definitions,
                                                     serviceTemplate);
         LOG.debug("Abstract volatile build plan: {}", volatileBuildPlan.toString());
 
+        // generate BPEL skeleton for the abstract plan and define interface of the plan
         final BPELPlan volatileBPELBuildPlan =
             this.planHandler.createEmptyBPELPlan(processNamespace, processName, volatileBuildPlan,
                                                  Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE_INITIATE_VOLATILE);
-
         volatileBPELBuildPlan.setTOSCAInterfaceName(Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE);
         volatileBPELBuildPlan.setTOSCAOperationname(Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE_INITIATE_VOLATILE);
 
+        // add required variables for the instance data handling
+        this.planHandler.initializeBPELSkeleton(volatileBPELBuildPlan, csarName);
+        this.nodeRelationInstanceHandler.addInstanceURLVarToTemplatePlans(volatileBPELBuildPlan, serviceTemplate);
+        this.nodeRelationInstanceHandler.addInstanceIDVarToTemplatePlans(volatileBPELBuildPlan, serviceTemplate);
+
+        // TODO
+        // final Property2VariableMapping propMap =
+        // this.propertyInitializer.initializePropertiesAsVariables(volatileBPELBuildPlan, serviceTemplate);
+
+        this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,
+                                           volatileBPELBuildPlan);
+
+        // add variable to handle the service instance id of the instance the plan belongs to
+        this.serviceInstanceHandler.addServiceInstanceHandlingFromInput(volatileBPELBuildPlan);
+
+        // load instance data from existing NodeTemplate instances for the provisioning of the volatile
+        // NodeTemplates
+        final String serviceTemplateURLVarName =
+            this.serviceInstanceHandler.getServiceTemplateURLVariableName(volatileBPELBuildPlan);
+
         // TODO: add provisioning logic
 
+        // remove invalid parts from the plan
+        this.finalizer.finalize(volatileBPELBuildPlan);
         return volatileBPELBuildPlan;
     }
 

@@ -131,7 +131,7 @@ public class BPELBackupManagementProcessBuilder extends AbstractManagementFeatur
         this.instanceVarsHandler.addInstanceIDVarToTemplatePlans(newBackupPlan, serviceTemplate);
 
         final Property2VariableMapping propMap =
-            this.propertyInitializer.initializePropertiesAsVariables(newBackupPlan, serviceTemplate);
+            this.propertyInitializer.initializePropertiesAsVariables(newBackupPlan, serviceTemplate, false);
 
         // initialize instanceData handling
         this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,
@@ -140,7 +140,7 @@ public class BPELBackupManagementProcessBuilder extends AbstractManagementFeatur
 
         final String serviceTemplateURLVarName =
             this.serviceInstanceVarsHandler.getServiceTemplateURLVariableName(newBackupPlan);
-        
+
         this.serviceInstanceVarsHandler.appendInitPropertyVariablesFromServiceInstanceData(newBackupPlan, propMap,
                                                                                            serviceTemplateURLVarName,
                                                                                            serviceTemplate, null);

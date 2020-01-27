@@ -128,7 +128,7 @@ public class BPELTestManagementProcessBuilder extends AbstractManagementFeatureP
         this.instanceVarsHandler.addInstanceIDVarToTemplatePlans(newTestPlan, serviceTemplate);
 
         final Property2VariableMapping propMap =
-            this.propertyInitializer.initializePropertiesAsVariables(newTestPlan, serviceTemplate);
+            this.propertyInitializer.initializePropertiesAsVariables(newTestPlan, serviceTemplate, false);
 
         // initialize instanceData handling
         this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,
@@ -154,15 +154,15 @@ public class BPELTestManagementProcessBuilder extends AbstractManagementFeatureP
         runPlugins(newTestPlan, propMap, serviceInstanceUrl, serviceInstanceID, serviceTemplateUrl, csarName);
 
         this.correlationHandler.addCorrellationID(newTestPlan);
-        
+
         this.serviceInstanceVarsHandler.appendSetServiceInstanceStateAsChild(newTestPlan,
-                                                                         this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newTestPlan),
-                                                                         "ERROR", serviceInstanceUrl);
+                                                                             this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newTestPlan),
+                                                                             "ERROR", serviceInstanceUrl);
         this.serviceInstanceVarsHandler.appendSetServiceInstanceStateAsChild(newTestPlan,
-                                                                         this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newTestPlan),
-                                                                         "FAILED",
-                                                                         this.serviceInstanceVarsHandler.findPlanInstanceUrlVariableName(newTestPlan));
-        
+                                                                             this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newTestPlan),
+                                                                             "FAILED",
+                                                                             this.serviceInstanceVarsHandler.findPlanInstanceUrlVariableName(newTestPlan));
+
         this.finalizer.finalize(newTestPlan);
 
         LOG.debug("Created Plan:");

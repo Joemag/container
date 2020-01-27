@@ -170,7 +170,7 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
                                            newBuildPlan);
 
         final Property2VariableMapping propMap =
-            this.propertyInitializer.initializePropertiesAsVariables(newBuildPlan, serviceTemplate);
+            this.propertyInitializer.initializePropertiesAsVariables(newBuildPlan, serviceTemplate, false);
         // init output
         this.propertyOutputInitializer.initializeBuildPlanOutput(definitions, newBuildPlan, propMap, serviceTemplate);
 

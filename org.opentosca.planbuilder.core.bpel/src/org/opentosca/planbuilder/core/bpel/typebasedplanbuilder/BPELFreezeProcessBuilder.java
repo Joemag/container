@@ -129,7 +129,7 @@ public class BPELFreezeProcessBuilder extends AbstractFreezePlanBuilder {
         this.instanceVarsHandler.addInstanceIDVarToTemplatePlans(newFreezePlan, serviceTemplate);
 
         final Property2VariableMapping propMap =
-            this.propertyInitializer.initializePropertiesAsVariables(newFreezePlan, serviceTemplate);
+            this.propertyInitializer.initializePropertiesAsVariables(newFreezePlan, serviceTemplate, false);
 
         // instanceDataAPI handling is done solely trough this extension
         this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,
@@ -176,7 +176,10 @@ public class BPELFreezeProcessBuilder extends AbstractFreezePlanBuilder {
         this.serviceInstanceVarsHandler.appendSetServiceInstanceStateAsChild(newFreezePlan,
                                                                              this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newFreezePlan),
                                                                              "ERROR", serviceInstanceURLVarName);
-        this.serviceInstanceVarsHandler.appendSetServiceInstanceStateAsChild(newFreezePlan, this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newFreezePlan), "FAILED", this.serviceInstanceVarsHandler.findPlanInstanceUrlVariableName(newFreezePlan));
+        this.serviceInstanceVarsHandler.appendSetServiceInstanceStateAsChild(newFreezePlan,
+                                                                             this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newFreezePlan),
+                                                                             "FAILED",
+                                                                             this.serviceInstanceVarsHandler.findPlanInstanceUrlVariableName(newFreezePlan));
 
         this.finalizer.finalize(newFreezePlan);
 

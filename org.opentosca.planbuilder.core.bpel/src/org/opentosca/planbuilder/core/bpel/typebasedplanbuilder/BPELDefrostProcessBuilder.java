@@ -103,7 +103,7 @@ public class BPELDefrostProcessBuilder extends AbstractDefrostPlanBuilder {
         this.instanceVarsHandler.addInstanceIDVarToTemplatePlans(newDefreezePlan, serviceTemplate);
 
         final Property2VariableMapping propMap =
-            this.propertyInitializer.initializePropertiesAsVariables(newDefreezePlan, serviceTemplate);
+            this.propertyInitializer.initializePropertiesAsVariables(newDefreezePlan, serviceTemplate, false);
 
         // instanceDataAPI handling is done solely trough this extension
         this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,
@@ -135,12 +135,15 @@ public class BPELDefrostProcessBuilder extends AbstractDefrostPlanBuilder {
         this.serviceInstanceInitializer.appendSetServiceInstanceState(newDefreezePlan,
                                                                       newDefreezePlan.getBpelMainSequenceOutputAssignElement(),
                                                                       "CREATED", serviceInstanceURLVarName);
-        
+
         this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newDefreezePlan,
-                                                                         this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newDefreezePlan),
-                                                                         "ERROR", serviceInstanceURLVarName);
-        this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newDefreezePlan, this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newDefreezePlan), "FAILED", this.serviceInstanceInitializer.findPlanInstanceUrlVariableName(newDefreezePlan));
-        
+                                                                             this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newDefreezePlan),
+                                                                             "ERROR", serviceInstanceURLVarName);
+        this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newDefreezePlan,
+                                                                             this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newDefreezePlan),
+                                                                             "FAILED",
+                                                                             this.serviceInstanceInitializer.findPlanInstanceUrlVariableName(newDefreezePlan));
+
         this.finalizer.finalize(newDefreezePlan);
 
         BPELDefrostProcessBuilder.LOG.debug("Created Plan:");
