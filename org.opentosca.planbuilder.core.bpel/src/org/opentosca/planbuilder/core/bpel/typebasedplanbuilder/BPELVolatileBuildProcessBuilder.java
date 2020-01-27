@@ -12,6 +12,7 @@ import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.AbstractVolatilePlanBuilder;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELFinalizer;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELPlanHandler;
+import org.opentosca.planbuilder.core.bpel.handlers.CorrelationIDInitializer;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.NodeRelationInstanceVariablesHandler;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.PropertyVariableHandler;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.SimplePlanBuilderServiceInstanceHandler;
@@ -20,6 +21,7 @@ import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
 import org.opentosca.planbuilder.model.utils.ModelUtils;
+import org.opentosca.planbuilder.plugins.context.Property2VariableMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +45,11 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
 
     private PropertyVariableHandler propertyInitializer;
 
+    private final CorrelationIDInitializer correlationHandler;
+
     public BPELVolatileBuildProcessBuilder() {
         this.finalizer = new BPELFinalizer();
+        this.correlationHandler = new CorrelationIDInitializer();
         try {
             this.planHandler = new BPELPlanHandler();
             this.nodeRelationInstanceHandler = new NodeRelationInstanceVariablesHandler(this.planHandler);
@@ -75,14 +80,16 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
         volatileBPELBuildPlan.setTOSCAInterfaceName(Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE);
         volatileBPELBuildPlan.setTOSCAOperationname(Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE_INITIATE_VOLATILE);
 
+        this.correlationHandler.addCorrellationID(volatileBPELBuildPlan);
+
         // add required variables for the instance data handling
         this.planHandler.initializeBPELSkeleton(volatileBPELBuildPlan, csarName);
         this.nodeRelationInstanceHandler.addInstanceURLVarToTemplatePlans(volatileBPELBuildPlan, serviceTemplate);
         this.nodeRelationInstanceHandler.addInstanceIDVarToTemplatePlans(volatileBPELBuildPlan, serviceTemplate);
 
         // TODO
-        // final Property2VariableMapping propMap =
-        // this.propertyInitializer.initializePropertiesAsVariables(volatileBPELBuildPlan, serviceTemplate);
+        final Property2VariableMapping propMap =
+            this.propertyInitializer.initializePropertiesAsVariables(volatileBPELBuildPlan, serviceTemplate, true);
 
         this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,
                                            volatileBPELBuildPlan);

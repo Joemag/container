@@ -52,29 +52,35 @@ public abstract class AbstractVolatilePlanBuilder extends AbstractSimplePlanBuil
         final Map<AbstractRelationshipTemplate, AbstractActivity> relationMapping = new HashMap<>();
 
         for (final AbstractNodeTemplate nodeTemplate : serviceTemplate.getTopologyTemplate().getNodeTemplates()) {
+            final AbstractActivity activity;
 
             // only provision volatile components
             if (ModelUtils.containsPolicyWithName(nodeTemplate, Types.volatilePolicyType)) {
-                final AbstractActivity activity = new NodeTemplateActivity(
-                    nodeTemplate.getId() + "_provisioning_activity", ActivityType.PROVISIONING, nodeTemplate);
-                activities.add(activity);
-                nodeMapping.put(nodeTemplate, activity);
+                activity = new NodeTemplateActivity(nodeTemplate.getId() + "_provisioning_activity",
+                    ActivityType.PROVISIONING, nodeTemplate);
+            } else {
+                activity =
+                    new NodeTemplateActivity(nodeTemplate.getId() + "_none_activity", ActivityType.NONE, nodeTemplate);
             }
+            activities.add(activity);
+            nodeMapping.put(nodeTemplate, activity);
         }
 
         for (final AbstractRelationshipTemplate relationshipTemplate : serviceTemplate.getTopologyTemplate()
                                                                                       .getRelationshipTemplates()) {
+            final RelationshipTemplateActivity activity;
 
             // only provision relations that have at least one volatile component as source or target
             if (Objects.nonNull(nodeMapping.get(relationshipTemplate.getSource()))
                 || Objects.nonNull(nodeMapping.get(relationshipTemplate.getTarget()))) {
-
-                final AbstractActivity activity =
-                    new RelationshipTemplateActivity(relationshipTemplate.getId() + "_provisioning_activity",
-                        ActivityType.PROVISIONING, relationshipTemplate);
-                activities.add(activity);
-                relationMapping.put(relationshipTemplate, activity);
+                activity = new RelationshipTemplateActivity(relationshipTemplate.getId() + "_provisioning_activity",
+                    ActivityType.PROVISIONING, relationshipTemplate);
+            } else {
+                activity = new RelationshipTemplateActivity(relationshipTemplate.getId() + "_none_activity",
+                    ActivityType.NONE, relationshipTemplate);
             }
+            activities.add(activity);
+            relationMapping.put(relationshipTemplate, activity);
         }
 
         // add links to define the order of the resulting BPEL plan
