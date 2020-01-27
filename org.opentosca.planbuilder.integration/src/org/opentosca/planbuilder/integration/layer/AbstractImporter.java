@@ -6,7 +6,6 @@ import java.util.List;
 
 import javax.xml.namespace.QName;
 
-import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.AbstractSimplePlanBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELBackupManagementProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELBuildProcessBuilder;
@@ -17,11 +16,11 @@ import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELSituationAwa
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTerminationProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTestManagementProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTransformationProcessBuilder;
+import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELVolatileBuildProcessBuilder;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
-import org.opentosca.planbuilder.model.utils.ModelUtils;
 
 /**
  * <p>
@@ -106,6 +105,7 @@ public abstract class AbstractImporter {
         final AbstractSimplePlanBuilder backupPlanBuilder = new BPELBackupManagementProcessBuilder();
         final AbstractSimplePlanBuilder testPlanBuilder = new BPELTestManagementProcessBuilder();
 
+        final AbstractSimplePlanBuilder volatileBuildPlanBuilder = new BPELVolatileBuildProcessBuilder();
 
         plans.addAll(scalingPlanBuilder.buildPlans(csarName, defs));
         plans.addAll(buildPlanBuilder.buildPlans(csarName, defs));
@@ -114,13 +114,7 @@ public abstract class AbstractImporter {
         plans.addAll(defreezePlanBuilder.buildPlans(csarName, defs));
         plans.addAll(backupPlanBuilder.buildPlans(csarName, defs));
         plans.addAll(testPlanBuilder.buildPlans(csarName, defs));
-
-        // build a plan that provisions all volatile components of a ServiceTemplate if there is at least
-        // one policy defined that indicates a volatile component
-        if (ModelUtils.containsPolicyWithName(defs.getServiceTemplates().get(0), Types.volatilePolicyType)) {
-            // TODO
-            // plans.addAll(new BPELBuildProcessBuilder("_volatileBuildPlan", true).buildPlans(csarName, defs));
-        }
+        plans.addAll(volatileBuildPlanBuilder.buildPlans(csarName, defs));
 
         return plans;
     }

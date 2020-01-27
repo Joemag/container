@@ -43,7 +43,8 @@ public class Interfaces {
     public static final String OPENTOSCA_DECLARATIVE_INTERFACE_LIFECYCLE =
         "http://www.example.com/interfaces/lifecycle";
     public static final String OPENTOSCA_DECLARATIVE_INTERFACE_LIFECYCLE2 = "http://opentosca.org/interfaces/lifecycle";
-	  public static final String OPENTOSCA_DECLARATIVE_INTERFACE_LIFECYCLE3 = "http://opentosca.org/interfaces/pattern/lifecycle";
+    public static final String OPENTOSCA_DECLARATIVE_INTERFACE_LIFECYCLE3 =
+        "http://opentosca.org/interfaces/pattern/lifecycle";
     public static final String OPENTOSCA_DECLARATIVE_INTERFACE_LIFECYCLE_INSTALL = "install";
     public static final String OPENTOSCA_DECLARATIVE_INTERFACE_LIFECYCLE_CONFIGURE = "configure";
     public static final String OPENTOSCA_DECLARATIVE_INTERFACE_LIFECYCLE_START = "start";
@@ -60,4 +61,8 @@ public class Interfaces {
     public static final String OPENTOSCA_DECLARATIVE_INTERFACE_CONNECT_CONNECTTO = "connectTo";
 
     public static final String OPENTOSCA_DECLARATIVE_INTERFACE_TEST = "http://opentosca.org/interfaces/test";
+
+    public static final String OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE = "OpenTOSCA-Lifecycle-Interface";
+    public static final String OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE_INITIATE = "initiate";
+    public static final String OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE_INITIATE_VOLATILE = "initiateVolatile";
 }

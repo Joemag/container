@@ -11,6 +11,7 @@ import java.util.Map;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opentosca.container.core.tosca.convention.Interfaces;
 import org.opentosca.planbuilder.AbstractBuildPlanBuilder;
 import org.opentosca.planbuilder.core.bpel.fragments.BPELProcessFragments;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELFinalizer;
@@ -150,10 +151,11 @@ public class BPELSituationAwareBuildProcessBuilder extends AbstractBuildPlanBuil
             LOG.debug(buildPlan.toString());
 
             final BPELPlan newBuildPlan =
-                this.planHandler.createEmptyBPELPlan(processNamespace, processName, buildPlan, "initiate");
+                this.planHandler.createEmptyBPELPlan(processNamespace, processName, buildPlan,
+                                                     Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE_INITIATE);
 
-            newBuildPlan.setTOSCAInterfaceName("OpenTOSCA-Lifecycle-Interface");
-            newBuildPlan.setTOSCAOperationname("initiate");
+            newBuildPlan.setTOSCAInterfaceName(Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE);
+            newBuildPlan.setTOSCAOperationname(Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE_INITIATE);
 
             this.planHandler.initializeBPELSkeleton(newBuildPlan, csarName);
 

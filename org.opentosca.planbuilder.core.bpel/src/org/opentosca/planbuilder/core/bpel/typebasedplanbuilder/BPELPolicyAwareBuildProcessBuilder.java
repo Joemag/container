@@ -15,6 +15,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.opentosca.container.core.tosca.convention.Interfaces;
 import org.opentosca.planbuilder.AbstractBuildPlanBuilder;
 import org.opentosca.planbuilder.core.bpel.artifactbasednodehandler.BPELScopeBuilder;
 import org.opentosca.planbuilder.core.bpel.artifactbasednodehandler.OperationChain;
@@ -135,8 +136,8 @@ public class BPELPolicyAwareBuildProcessBuilder extends AbstractBuildPlanBuilder
         final BPELPlan newBuildPlan =
             this.planHandler.createEmptyBPELPlan(processNamespace, processName, buildPlan, "initiate");
 
-        newBuildPlan.setTOSCAInterfaceName("OpenTOSCA-Lifecycle-Interface");
-        newBuildPlan.setTOSCAOperationname("initiate");
+        newBuildPlan.setTOSCAInterfaceName(Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE);
+        newBuildPlan.setTOSCAOperationname(Interfaces.OPENTOSCA_DECLARATIVE_INTERFACE_PLAN_LIFECYCLE_INITIATE);
 
         this.planHandler.initializeBPELSkeleton(newBuildPlan, csarName);
         // newBuildPlan.setCsarName(csarName);
