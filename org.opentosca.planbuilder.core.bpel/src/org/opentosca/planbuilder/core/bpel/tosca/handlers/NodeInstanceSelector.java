@@ -65,7 +65,7 @@ public class NodeInstanceSelector {
         this.bpelProcessHandler.addIntegerVariable(relationInstancesCountVarName, plan);
 
         // fetch serviceInstance VarName
-        final String serviceInstanceVarName = this.serviceInstanceInitializer.getServiceTemplateURLVariableName(plan);
+        final String serviceInstanceVarName = this.serviceInstanceInitializer.findServiceTemplateUrlVariableName(plan);
 
         if (serviceInstanceVarName == null) {
             return;
@@ -169,7 +169,8 @@ public class NodeInstanceSelector {
      * @param plan the plan to add the bpel code to
      */
     public void addNodeInstanceUpdate(final Set<AbstractNodeTemplate> nodes, final BPELPlan plan,
-                                      final Property2VariableMapping propMap, AbstractServiceTemplate serviceTemplate) {
+                                      final Property2VariableMapping propMap,
+                                      final AbstractServiceTemplate serviceTemplate) {
         final String instanceDataAPIResponseVarName = createRESTResponseVar(plan);
 
         for (final AbstractNodeTemplate nodeTemplate : nodes) {
@@ -208,7 +209,7 @@ public class NodeInstanceSelector {
     public void addNodeInstanceUpdate(final AbstractNodeTemplate nodeTemplate, final BPELPlan plan,
                                       final Property2VariableMapping propMap, final String nodeInstanceIDVarName,
                                       final String instanceDataAPIResponseVarName,
-                                      AbstractServiceTemplate serviceTemplate) {
+                                      final AbstractServiceTemplate serviceTemplate) {
         // check whether the nodeTemplate has properties, if not, skip the
         // update
         if (nodeTemplate.getProperties() == null) {
@@ -219,7 +220,7 @@ public class NodeInstanceSelector {
         try {
             Node nodeInstancePropertiesGETNode =
                 this.bpelFragments.createRESTExtensionGETForInstancePropertiesAsNode(nodeInstanceIDVarName,
-                                                                                         instanceDataAPIResponseVarName);
+                                                                                     instanceDataAPIResponseVarName);
             nodeInstancePropertiesGETNode = plan.getBpelDocument().importNode(nodeInstancePropertiesGETNode, true);
 
             plan.getBpelMainSequenceElement().appendChild(nodeInstancePropertiesGETNode);
@@ -240,7 +241,7 @@ public class NodeInstanceSelector {
                 final Element childElement = (Element) propChildNodes.item(index);
                 // find bpelVariable
 
-                for (PropertyVariable var : propMap.getNodePropertyVariables(serviceTemplate, nodeTemplate)) {
+                for (final PropertyVariable var : propMap.getNodePropertyVariables(serviceTemplate, nodeTemplate)) {
                     if (var.getPropertyName().equals(childElement.getLocalName())) {
                         element2BpelVarNameMap.put(childElement, var.getVariableName());
                     }

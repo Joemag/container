@@ -140,7 +140,7 @@ public class BPELFreezeProcessBuilder extends AbstractFreezePlanBuilder {
         // variables to hold the value for plugins
         this.serviceInstanceVarsHandler.addServiceInstanceHandlingFromInput(newFreezePlan);
         final String serviceTemplateURLVarName =
-            this.serviceInstanceVarsHandler.getServiceTemplateURLVariableName(newFreezePlan);
+            this.serviceInstanceVarsHandler.findServiceTemplateUrlVariableName(newFreezePlan);
         this.serviceInstanceVarsHandler.appendInitPropertyVariablesFromServiceInstanceData(newFreezePlan, propMap,
                                                                                            serviceTemplateURLVarName,
                                                                                            serviceTemplate,

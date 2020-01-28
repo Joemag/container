@@ -139,7 +139,7 @@ public class BPELBackupManagementProcessBuilder extends AbstractManagementFeatur
         this.serviceInstanceVarsHandler.addServiceInstanceHandlingFromInput(newBackupPlan);
 
         final String serviceTemplateURLVarName =
-            this.serviceInstanceVarsHandler.getServiceTemplateURLVariableName(newBackupPlan);
+            this.serviceInstanceVarsHandler.findServiceTemplateUrlVariableName(newBackupPlan);
 
         this.serviceInstanceVarsHandler.appendInitPropertyVariablesFromServiceInstanceData(newBackupPlan, propMap,
                                                                                            serviceTemplateURLVarName,

@@ -15,9 +15,12 @@ import org.opentosca.planbuilder.core.bpel.handlers.BPELPlanHandler;
 import org.opentosca.planbuilder.core.bpel.handlers.CorrelationIDInitializer;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.NodeRelationInstanceVariablesHandler;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.PropertyVariableHandler;
+import org.opentosca.planbuilder.core.bpel.tosca.handlers.ServiceTemplateBoundaryPropertyMappingsToOutputHandler;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.SimplePlanBuilderServiceInstanceHandler;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
+import org.opentosca.planbuilder.model.plan.ActivityType;
 import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
+import org.opentosca.planbuilder.model.plan.bpel.BPELScope;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
 import org.opentosca.planbuilder.model.utils.ModelUtils;
@@ -47,14 +50,20 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
 
     private final CorrelationIDInitializer correlationHandler;
 
+    private NodeRelationInstanceVariablesHandler instanceVarsHandler;
+
+    private final ServiceTemplateBoundaryPropertyMappingsToOutputHandler propertyOutputInitializer;
+
     public BPELVolatileBuildProcessBuilder() {
         this.finalizer = new BPELFinalizer();
         this.correlationHandler = new CorrelationIDInitializer();
+        this.propertyOutputInitializer = new ServiceTemplateBoundaryPropertyMappingsToOutputHandler();
         try {
             this.planHandler = new BPELPlanHandler();
             this.nodeRelationInstanceHandler = new NodeRelationInstanceVariablesHandler(this.planHandler);
-            this.serviceInstanceHandler = new SimplePlanBuilderServiceInstanceHandler();
             this.propertyInitializer = new PropertyVariableHandler(this.planHandler);
+            this.instanceVarsHandler = new NodeRelationInstanceVariablesHandler(this.planHandler);
+            this.serviceInstanceHandler = new SimplePlanBuilderServiceInstanceHandler();
         }
         catch (final ParserConfigurationException e) {
             LOG.error("Error while initializing BPELPlanHandler", e);
@@ -87,22 +96,44 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
         this.nodeRelationInstanceHandler.addInstanceURLVarToTemplatePlans(volatileBPELBuildPlan, serviceTemplate);
         this.nodeRelationInstanceHandler.addInstanceIDVarToTemplatePlans(volatileBPELBuildPlan, serviceTemplate);
 
-        // TODO
+        // create variables for the properties of all Node- and RelationshipTemplates
         final Property2VariableMapping propMap =
             this.propertyInitializer.initializePropertiesAsVariables(volatileBPELBuildPlan, serviceTemplate, true);
+
+        this.propertyOutputInitializer.initializeBuildPlanOutput(definitions, volatileBPELBuildPlan, propMap,
+                                                                 serviceTemplate);
 
         this.planHandler.registerExtension("http://www.apache.org/ode/bpel/extensions/bpel4restlight", true,
                                            volatileBPELBuildPlan);
 
         // add variable to handle the service instance id of the instance the plan belongs to
         this.serviceInstanceHandler.addServiceInstanceHandlingFromInput(volatileBPELBuildPlan);
+        final String serviceTemplateUrl =
+            this.serviceInstanceHandler.findServiceTemplateUrlVariableName(volatileBPELBuildPlan);
+        final String serviceInstanceId =
+            this.serviceInstanceHandler.findServiceInstanceIdVarName(volatileBPELBuildPlan);
+        final String serviceInstanceUrl =
+            this.serviceInstanceHandler.findServiceInstanceUrlVariableName(volatileBPELBuildPlan);
 
-        // load instance data from existing NodeTemplate instances for the provisioning of the volatile
-        // NodeTemplates
-        final String serviceTemplateURLVarName =
-            this.serviceInstanceHandler.getServiceTemplateURLVariableName(volatileBPELBuildPlan);
+        // load instance data from existing instances
+        this.serviceInstanceHandler.appendInitPropertyVariablesFromServiceInstanceData(volatileBPELBuildPlan, propMap,
+                                                                                       serviceTemplateUrl,
+                                                                                       serviceTemplate,
+                                                                                       "?state=STARTED&amp;state=CREATED&amp;state=CONFIGURED");
+        this.instanceVarsHandler.addNodeInstanceFindLogic(volatileBPELBuildPlan,
+                                                          "?state=STARTED&amp;state=CREATED&amp;state=CONFIGURED&amp;serviceInstanceId=$bpelvar["
+                                                              + serviceInstanceId + "]",
+                                                          serviceTemplate);
+        this.instanceVarsHandler.addPropertyVariableUpdateBasedOnNodeInstanceID(volatileBPELBuildPlan, propMap,
+                                                                                serviceTemplate);
+        this.instanceVarsHandler.addRelationInstanceFindLogic(volatileBPELBuildPlan,
+                                                              "?state=CREATED&amp;state=INITIAL&amp;serviceInstanceId=$bpelvar["
+                                                                  + serviceInstanceId + "]",
+                                                              serviceTemplate);
 
         // TODO: add provisioning logic
+        runPlugins(volatileBPELBuildPlan, propMap, serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
+
 
         // remove invalid parts from the plan
         this.finalizer.finalize(volatileBPELBuildPlan);
@@ -125,5 +156,20 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
             }
         }
         return plans;
+    }
+
+    /**
+     * TODO
+     */
+    private void runPlugins(final BPELPlan buildPlan, final Property2VariableMapping map,
+                            final String serviceInstanceUrl, final String serviceInstanceID,
+                            final String serviceTemplateUrl, final String csarFileName) {
+
+        for (final BPELScope bpelScope : buildPlan.getTemplateBuildPlans()) {
+            if (bpelScope.getActivity().getType().equals(ActivityType.PROVISIONING)) {
+                LOG.debug("Handling provisioning activity {}!", bpelScope.getActivity().toString());
+                // TODO
+            }
+        }
     }
 }

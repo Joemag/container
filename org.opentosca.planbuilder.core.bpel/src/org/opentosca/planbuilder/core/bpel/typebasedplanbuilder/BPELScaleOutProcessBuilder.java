@@ -141,7 +141,7 @@ public class BPELScaleOutProcessBuilder extends AbstractScaleOutPlanBuilder {
         nodeContext.addVariable(responseVarName, BPELPlan.VariableType.TYPE, anyTypeDeclId);
 
 
-        final String serviceTemplateUrlVarName = this.serviceInstanceHandler.getServiceTemplateURLVariableName(plan);
+        final String serviceTemplateUrlVarName = this.serviceInstanceHandler.findServiceTemplateUrlVariableName(plan);
 
         // fetch relationInstance data
         try {
@@ -212,9 +212,7 @@ public class BPELScaleOutProcessBuilder extends AbstractScaleOutPlanBuilder {
             this.instanceInitializer.findInstanceUrlVarName(plan, serviceTemplate,
                                                             relationshipTemplate.getTarget().getId(), true);
 
-        final String serviceInstanceIdVarName = this.serviceInstanceHandler.getServiceTemplateURLVariableName(plan);
-
-        final String serviceTemplateUrlVarName = this.serviceInstanceHandler.getServiceTemplateURLVariableName(plan);
+        final String serviceTemplateUrlVarName = this.serviceInstanceHandler.findServiceTemplateUrlVariableName(plan);
 
         // find relationshipTemplate instance that has the node template
         // instance as source

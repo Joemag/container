@@ -106,7 +106,7 @@ public class BPELTerminationProcessBuilder extends AbstractTerminationPlanBuilde
         // variables to hold the value for plugins
         this.serviceInstanceHandler.addServiceInstanceHandlingFromInput(newTerminationPlan);
         final String serviceTemplateURLVarName =
-            this.serviceInstanceHandler.getServiceTemplateURLVariableName(newTerminationPlan);
+            this.serviceInstanceHandler.findServiceTemplateUrlVariableName(newTerminationPlan);
 
         final String serviceInstanceId = this.serviceInstanceHandler.findServiceInstanceIdVarName(newTerminationPlan);
 
