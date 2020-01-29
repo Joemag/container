@@ -102,8 +102,7 @@ public class Types {
         new QName("http://opentosca.org/policytypes", "PublicAccessPolicy");
     public static final QName onlyModeledPortsPolicyType =
         new QName("http://opentosca.org/policytypes", "OnlyModeledPortsPolicyType");
-    public static final QName volatilePolicyType =
-        new QName("http://opentosca.org/policytypes", "VolatileComponent_w1-wip1");
+    public static final QName volatilePolicyType = new QName("http://opentosca.org/policytypes", "VolatileComponent");
     public static final QName freezableComponentPolicy =
         new QName("http://opentosca.org/policytypes", "FreezableComponent");
     public static final QName statefulComponentPolicy =
