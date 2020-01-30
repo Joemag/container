@@ -143,7 +143,8 @@ public class BPELBackupManagementProcessBuilder extends AbstractManagementFeatur
 
         this.serviceInstanceVarsHandler.appendInitPropertyVariablesFromServiceInstanceData(newBackupPlan, propMap,
                                                                                            serviceTemplateURLVarName,
-                                                                                           serviceTemplate, null);
+                                                                                           serviceTemplate, null,
+                                                                                           false);
 
         // fetch all node instances that are running
         this.instanceVarsHandler.addNodeInstanceFindLogic(newBackupPlan,

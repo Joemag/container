@@ -6,14 +6,17 @@ import java.net.URLEncoder;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
 import org.opentosca.planbuilder.model.plan.bpel.BPELScope;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
+import org.opentosca.planbuilder.model.utils.ModelUtils;
 import org.opentosca.planbuilder.plugins.context.Property2VariableMapping;
 import org.opentosca.planbuilder.plugins.context.PropertyVariable;
 import org.w3c.dom.Element;
@@ -331,7 +334,8 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
                                                                       final String serviceTemplateUrlVarName,
                                                                       final Collection<BPELScope> scopes,
                                                                       final AbstractServiceTemplate serviceTemplate,
-                                                                      final String query) {
+                                                                      final String query,
+                                                                      final boolean includeVolatile) {
         final String xsdNamespace = "http://www.w3.org/2001/XMLSchema";
         final String xsdPrefix = "xsd" + System.currentTimeMillis();
         this.bpelProcessHandler.addNamespaceToBPELDoc(xsdPrefix, xsdNamespace, plan);
@@ -374,6 +378,12 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
             }
 
             if (templatePlan.getNodeTemplate().getProperties() == null) {
+                continue;
+            }
+
+            // do not initiate property variables from volatile components
+            if (!includeVolatile && Objects.nonNull(templatePlan.getNodeTemplate())
+                && ModelUtils.containsPolicyWithName(templatePlan.getNodeTemplate(), Types.volatilePolicyType)) {
                 continue;
             }
 
@@ -473,10 +483,11 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
                                                                       final Property2VariableMapping propMap,
                                                                       final String serviceTemplateUrlVarName,
                                                                       final AbstractServiceTemplate serviceTemplate,
-                                                                      final String query) {
+                                                                      final String query,
+                                                                      final boolean includeVolatile) {
         return this.appendInitPropertyVariablesFromServiceInstanceData(plan, propMap, serviceTemplateUrlVarName,
                                                                        plan.getTemplateBuildPlans(), serviceTemplate,
-                                                                       query);
+                                                                       query, includeVolatile);
     }
 
     private void addAssignServiceTemplateURLVariable(final BPELPlan plan, final String serviceInstancesUrlVarName,

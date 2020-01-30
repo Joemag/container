@@ -113,7 +113,8 @@ public class BPELTerminationProcessBuilder extends AbstractTerminationPlanBuilde
         this.serviceInstanceHandler.appendInitPropertyVariablesFromServiceInstanceData(newTerminationPlan, propMap,
                                                                                        serviceTemplateURLVarName,
                                                                                        serviceTemplate,
-                                                                                       "?state=STARTED&amp;state=CREATED&amp;state=CONFIGURED");
+                                                                                       "?state=STARTED&amp;state=CREATED&amp;state=CONFIGURED",
+                                                                                       false);
 
         // fetch all nodeinstances that are running
         this.instanceVarsHandler.addNodeInstanceFindLogic(newTerminationPlan,

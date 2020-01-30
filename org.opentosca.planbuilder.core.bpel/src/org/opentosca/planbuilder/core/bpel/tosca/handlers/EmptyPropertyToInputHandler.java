@@ -1,12 +1,11 @@
 package org.opentosca.planbuilder.core.bpel.tosca.handlers;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.core.bpel.context.BPELPlanContext;
 import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
 import org.opentosca.planbuilder.model.plan.bpel.BPELScope;
@@ -40,7 +39,7 @@ public class EmptyPropertyToInputHandler {
      */
     private void addToPlanInput(final BPELPlan buildPlan, final String propLocalName, final Variable var,
                                 final BPELPlanContext context) {
-                
+
         // add to input
         context.addStringValueToPlanRequest(propLocalName);
 
@@ -108,24 +107,27 @@ public class EmptyPropertyToInputHandler {
     }
 
     public void initializeEmptyPropertiesAsInputParam(final BPELPlan buildPlan, final Property2VariableMapping propMap,
-                                                      String serviceInstanceUrl, String serviceInstanceId,
-                                                      String serviceTemplateUrl,
-                                                      AbstractServiceTemplate serviceTemplate, String csarName) {
+                                                      final String serviceInstanceUrl, final String serviceInstanceId,
+                                                      final String serviceTemplateUrl,
+                                                      final AbstractServiceTemplate serviceTemplate,
+                                                      final String csarName, final boolean includeNonVolatile) {
         this.initializeEmptyPropertiesAsInputParam(buildPlan.getTemplateBuildPlans(), buildPlan, propMap,
                                                    serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl,
-                                                   serviceTemplate, csarName);
+                                                   serviceTemplate, csarName, includeNonVolatile);
     }
 
     public void initializeEmptyPropertiesAsInputParam(final Collection<BPELScope> bpelActivities, final BPELPlan plan,
-                                                      final Property2VariableMapping propMap, String serviceInstanceUrl,
-                                                      String serviceInstanceId, String serviceTemplateUrl,
-                                                      AbstractServiceTemplate serviceTemplate, String csarName) {
+                                                      final Property2VariableMapping propMap,
+                                                      final String serviceInstanceUrl, final String serviceInstanceId,
+                                                      final String serviceTemplateUrl,
+                                                      final AbstractServiceTemplate serviceTemplate,
+                                                      final String csarName, final boolean includeNonVolatile) {
         for (final BPELScope templatePlan : bpelActivities) {
             if (templatePlan.getNodeTemplate() != null) {
                 final AbstractNodeTemplate nodeTemplate = templatePlan.getNodeTemplate();
 
-                final BPELPlanContext context = new BPELPlanContext(plan,templatePlan, propMap, plan.getServiceTemplate(),
-                    serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
+                final BPELPlanContext context = new BPELPlanContext(plan, templatePlan, propMap,
+                    plan.getServiceTemplate(), serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
 
 
                 if (propMap.getNodePropertyVariables(serviceTemplate, nodeTemplate).isEmpty()) {
@@ -133,7 +135,12 @@ public class EmptyPropertyToInputHandler {
                     continue;
                 }
 
-                for (PropertyVariable var : propMap.getNodePropertyVariables(serviceTemplate, nodeTemplate)) {
+                // skip non-volatile components if required
+                if (!includeNonVolatile && !ModelUtils.containsPolicyWithName(nodeTemplate, Types.volatilePolicyType)) {
+                    continue;
+                }
+
+                for (final PropertyVariable var : propMap.getNodePropertyVariables(serviceTemplate, nodeTemplate)) {
                     if (var.getContent() != null && !var.getContent().isEmpty()) {
                         String content = var.getContent();
                         if (content.startsWith("get_input:")) {
@@ -144,7 +151,5 @@ public class EmptyPropertyToInputHandler {
                 }
             }
         }
-
     }
-
 }

@@ -368,7 +368,8 @@ public class BPELScaleOutProcessBuilder extends AbstractScaleOutPlanBuilder {
 
             this.emptyPropInit.initializeEmptyPropertiesAsInputParam(provScopeActivities, bpelScaleOutProcess, propMap,
                                                                      serviceInstanceUrl, serviceInstanceId,
-                                                                     serviceTemplateUrl, serviceTemplate, csarName);
+                                                                     serviceTemplateUrl, serviceTemplate, csarName,
+                                                                     true);
 
             this.runProvisioningLogicGeneration(bpelScaleOutProcess, propMap, scalingPlanDefinition.nodeTemplates,
                                                 scalingPlanDefinition.relationshipTemplates, serviceInstanceUrl,

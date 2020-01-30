@@ -71,8 +71,8 @@ public abstract class AbstractVolatilePlanBuilder extends AbstractSimplePlanBuil
             final RelationshipTemplateActivity activity;
 
             // only provision relations that have at least one volatile component as source or target
-            if (Objects.nonNull(nodeMapping.get(relationshipTemplate.getSource()))
-                || Objects.nonNull(nodeMapping.get(relationshipTemplate.getTarget()))) {
+            if (nodeMapping.get(relationshipTemplate.getSource()).getType().equals(ActivityType.PROVISIONING)
+                || nodeMapping.get(relationshipTemplate.getTarget()).getType().equals(ActivityType.PROVISIONING)) {
                 activity = new RelationshipTemplateActivity(relationshipTemplate.getId() + "_provisioning_activity",
                     ActivityType.PROVISIONING, relationshipTemplate);
             } else {

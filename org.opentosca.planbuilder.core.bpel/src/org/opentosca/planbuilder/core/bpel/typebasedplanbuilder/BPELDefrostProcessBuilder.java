@@ -120,7 +120,7 @@ public class BPELDefrostProcessBuilder extends AbstractDefrostPlanBuilder {
 
         this.emptyPropInit.initializeEmptyPropertiesAsInputParam(newDefreezePlan, propMap, serviceInstanceUrl,
                                                                  serviceInstanceId, serviceTemplateUrl, serviceTemplate,
-                                                                 csarName);
+                                                                 csarName, true);
 
         runPlugins(newDefreezePlan, propMap, serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
 

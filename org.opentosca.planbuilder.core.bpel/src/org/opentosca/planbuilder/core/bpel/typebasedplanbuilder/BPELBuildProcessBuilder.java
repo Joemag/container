@@ -159,7 +159,7 @@ public class BPELBuildProcessBuilder extends AbstractBuildPlanBuilder {
 
             this.emptyPropInit.initializeEmptyPropertiesAsInputParam(newBuildPlan, propMap, serviceInstanceUrl,
                                                                      serviceInstanceID, serviceTemplateUrl,
-                                                                     serviceTemplate, csarName);
+                                                                     serviceTemplate, csarName, true);
 
             runPlugins(newBuildPlan, propMap, serviceInstanceUrl, serviceInstanceID, serviceTemplateUrl, csarName);
 

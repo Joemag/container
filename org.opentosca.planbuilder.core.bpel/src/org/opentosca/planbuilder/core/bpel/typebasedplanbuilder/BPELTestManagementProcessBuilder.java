@@ -138,7 +138,8 @@ public class BPELTestManagementProcessBuilder extends AbstractManagementFeatureP
             this.serviceInstanceVarsHandler.findServiceTemplateUrlVariableName(newTestPlan);
         this.serviceInstanceVarsHandler.appendInitPropertyVariablesFromServiceInstanceData(newTestPlan, propMap,
                                                                                            serviceTemplateURLVarName,
-                                                                                           serviceTemplate, null);
+                                                                                           serviceTemplate, null,
+                                                                                           false);
 
         final String serviceInstanceUrl =
             this.serviceInstanceInitializer.findServiceInstanceUrlVariableName(newTestPlan);

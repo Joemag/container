@@ -10,21 +10,27 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.opentosca.container.core.tosca.convention.Interfaces;
 import org.opentosca.container.core.tosca.convention.Types;
 import org.opentosca.planbuilder.AbstractVolatilePlanBuilder;
+import org.opentosca.planbuilder.core.bpel.context.BPELPlanContext;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELFinalizer;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELPlanHandler;
 import org.opentosca.planbuilder.core.bpel.handlers.CorrelationIDInitializer;
+import org.opentosca.planbuilder.core.bpel.tosca.handlers.EmptyPropertyToInputHandler;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.NodeRelationInstanceVariablesHandler;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.PropertyVariableHandler;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.ServiceTemplateBoundaryPropertyMappingsToOutputHandler;
 import org.opentosca.planbuilder.core.bpel.tosca.handlers.SimplePlanBuilderServiceInstanceHandler;
+import org.opentosca.planbuilder.core.bpel.typebasednodehandler.BPELPluginHandler;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.plan.ActivityType;
 import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
 import org.opentosca.planbuilder.model.plan.bpel.BPELScope;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
+import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
+import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
 import org.opentosca.planbuilder.model.utils.ModelUtils;
 import org.opentosca.planbuilder.plugins.context.Property2VariableMapping;
+import org.opentosca.planbuilder.plugins.typebased.IPlanBuilderPostPhasePlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +60,18 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
 
     private final ServiceTemplateBoundaryPropertyMappingsToOutputHandler propertyOutputInitializer;
 
+    private final BPELPluginHandler bpelPluginHandler;
+
+    private final EmptyPropertyToInputHandler emptyPropInit;
+
     public BPELVolatileBuildProcessBuilder() {
+
         this.finalizer = new BPELFinalizer();
         this.correlationHandler = new CorrelationIDInitializer();
         this.propertyOutputInitializer = new ServiceTemplateBoundaryPropertyMappingsToOutputHandler();
+        this.bpelPluginHandler = new BPELPluginHandler();
+        this.emptyPropInit = new EmptyPropertyToInputHandler();
+
         try {
             this.planHandler = new BPELPlanHandler();
             this.nodeRelationInstanceHandler = new NodeRelationInstanceVariablesHandler(this.planHandler);
@@ -119,7 +133,8 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
         this.serviceInstanceHandler.appendInitPropertyVariablesFromServiceInstanceData(volatileBPELBuildPlan, propMap,
                                                                                        serviceTemplateUrl,
                                                                                        serviceTemplate,
-                                                                                       "?state=STARTED&amp;state=CREATED&amp;state=CONFIGURED");
+                                                                                       "?state=STARTED&amp;state=CREATED&amp;state=CONFIGURED",
+                                                                                       false);
         this.instanceVarsHandler.addNodeInstanceFindLogic(volatileBPELBuildPlan,
                                                           "?state=STARTED&amp;state=CREATED&amp;state=CONFIGURED&amp;serviceInstanceId=$bpelvar["
                                                               + serviceInstanceId + "]",
@@ -131,9 +146,13 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
                                                                   + serviceInstanceId + "]",
                                                               serviceTemplate);
 
-        // TODO: add provisioning logic
-        runPlugins(volatileBPELBuildPlan, propMap, serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
+        // add the properties that are defined with "get_input:" to the plan input message
+        this.emptyPropInit.initializeEmptyPropertiesAsInputParam(volatileBPELBuildPlan, propMap, serviceInstanceUrl,
+                                                                 serviceInstanceId, serviceTemplateUrl, serviceTemplate,
+                                                                 csarName, false);
 
+        // add provisioning logic for the volatile components
+        runPlugins(volatileBPELBuildPlan, propMap, serviceInstanceUrl, serviceInstanceId, serviceTemplateUrl, csarName);
 
         // remove invalid parts from the plan
         this.finalizer.finalize(volatileBPELBuildPlan);
@@ -159,16 +178,53 @@ public class BPELVolatileBuildProcessBuilder extends AbstractVolatilePlanBuilder
     }
 
     /**
-     * TODO
+     * Execute the plug-ins to provision the volatile components and to handle their instance data.
+     *
+     * @param buildPlan a BPEL plan which is already initialized
+     * @param propMap the mapping between the plan variables and the properties of the components
+     * @param serviceInstanceUrl the name of the variable containing the URL of the service instance
+     * @param serviceInstanceID the name of the variable containing the Id of the service instance
+     * @param serviceTemplateUrl the name of the variable containing the URL of the service template
+     * @param csarFileName the file name of the CSAR the build plan belongs to
      */
-    private void runPlugins(final BPELPlan buildPlan, final Property2VariableMapping map,
+    private void runPlugins(final BPELPlan buildPlan, final Property2VariableMapping propMap,
                             final String serviceInstanceUrl, final String serviceInstanceID,
                             final String serviceTemplateUrl, final String csarFileName) {
 
         for (final BPELScope bpelScope : buildPlan.getTemplateBuildPlans()) {
             if (bpelScope.getActivity().getType().equals(ActivityType.PROVISIONING)) {
-                LOG.debug("Handling provisioning activity {}!", bpelScope.getActivity().toString());
-                // TODO
+                LOG.debug("Handling provisioning activity with Id {}!", bpelScope.getActivity().getId());
+
+                final BPELPlanContext context =
+                    new BPELPlanContext(buildPlan, bpelScope, propMap, buildPlan.getServiceTemplate(),
+                        serviceInstanceUrl, serviceInstanceID, serviceTemplateUrl, csarFileName);
+
+                if (Objects.nonNull(bpelScope.getNodeTemplate())) {
+                    // provision volatile NodeTemplates
+                    final AbstractNodeTemplate nodeTemplate = bpelScope.getNodeTemplate();
+
+                    // skip provisioning for already running volatile NodeTemplates
+                    if (isRunning(nodeTemplate)) {
+
+                        // handle instance data for the NodeTemplates
+                        for (final IPlanBuilderPostPhasePlugin postPhasePlugin : this.pluginRegistry.getPostPlugins()) {
+                            if (postPhasePlugin.canHandleCreate(bpelScope.getNodeTemplate())) {
+                                postPhasePlugin.handleCreate(context, bpelScope.getNodeTemplate());
+                            }
+                        }
+                        continue;
+                    }
+
+                    this.bpelPluginHandler.handleActivity(context, bpelScope, nodeTemplate);
+                } else if (Objects.nonNull(bpelScope.getRelationshipTemplate())) {
+
+                    // provision RelationshipTemplates connected to volatile NodeTemplates
+                    final AbstractRelationshipTemplate relationshipTemplate = bpelScope.getRelationshipTemplate();
+                    this.bpelPluginHandler.handleActivity(context, bpelScope, relationshipTemplate);
+                } else {
+                    LOG.error("Unable to handle provisioning activity with Id {} as it has no NodeTemplate or RelationshipTemplate!",
+                              bpelScope.getActivity().getId());
+                }
             }
         }
     }
