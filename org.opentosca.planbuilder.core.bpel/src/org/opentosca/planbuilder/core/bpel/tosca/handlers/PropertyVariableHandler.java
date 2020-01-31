@@ -65,11 +65,13 @@ public class PropertyVariableHandler {
         final Property2VariableMapping map = new Property2VariableMapping();
 
         for (final AbstractNodeTemplate nodeTemplate : nodes) {
-
+            LOG.debug("Initializing the properties for NodeTemplate {} as variables.", nodeTemplate.getId());
             this.initializePropertiesAsVariables(map, plan.getTemplateBuildPlan(nodeTemplate), serviceTemplate);
         }
 
         for (final AbstractRelationshipTemplate relationshipTemplate : relations) {
+            LOG.debug("Initializing the properties for RelationshipTemplate {} as variables.",
+                      relationshipTemplate.getId());
             this.initializePropertiesAsVariables(map, plan.getTemplateBuildPlan(relationshipTemplate), serviceTemplate);
         }
         return map;

@@ -50,8 +50,8 @@ public class Importer extends AbstractImporter {
     public List<AbstractPlan> generatePlans(final CSARID csarId) {
         try {
             final CSARContent content = this.handler.getCSARContentForID(csarId);
-            final AbstractDefinitions defs = this.createContext(content);
-            final List<AbstractPlan> plans = this.buildPlans(defs, csarId.getFileName());
+            final AbstractDefinitions defs = createContext(content);
+            final List<AbstractPlan> plans = buildPlans(defs, csarId.getFileName());
             return plans;
         }
         catch (final UserException e) {
@@ -63,38 +63,35 @@ public class Importer extends AbstractImporter {
         return new ArrayList<>();
     }
 
-    public AbstractPlan generateAdaptationPlan(CSARID csarId, QName serviceTemplatId,
-                                               Collection<String> sourceNodeTemplateIds,
-                                               Collection<String> sourceRelationshipTemplateIds,
-                                               Collection<String> targetNodeTemplateId,
-                                               Collection<String> targetRelationshipTemplateId) throws SystemException {
+    public AbstractPlan generateAdaptationPlan(final CSARID csarId, final QName serviceTemplatId,
+                                               final Collection<String> sourceNodeTemplateIds,
+                                               final Collection<String> sourceRelationshipTemplateIds,
+                                               final Collection<String> targetNodeTemplateId,
+                                               final Collection<String> targetRelationshipTemplateId) throws SystemException {
 
         try {
-            CSARContent content = this.handler.getCSARContentForID(csarId);
-            AbstractDefinitions defs = this.createContext(content);
-            AbstractTopologyTemplate topology = defs.getServiceTemplates().get(0).getTopologyTemplate();
+            final CSARContent content = this.handler.getCSARContentForID(csarId);
+            final AbstractDefinitions defs = createContext(content);
+            final AbstractTopologyTemplate topology = defs.getServiceTemplates().get(0).getTopologyTemplate();
 
-            return this.buildAdaptationPlan(csarId.getFileName(), defs, serviceTemplatId,
-                                     this.getNodes(topology, sourceNodeTemplateIds),
-                                     this.getRelations(topology, sourceRelationshipTemplateIds),
-                                     this.getNodes(topology, targetNodeTemplateId),
-                                     this.getRelations(topology, targetRelationshipTemplateId));
-
+            return buildAdaptationPlan(csarId.getFileName(), defs, serviceTemplatId,
+                                       getNodes(topology, sourceNodeTemplateIds),
+                                       getRelations(topology, sourceRelationshipTemplateIds),
+                                       getNodes(topology, targetNodeTemplateId),
+                                       getRelations(topology, targetRelationshipTemplateId));
         }
-        catch (UserException e) {
-            // TODO Auto-generated catch block
+        catch (final UserException e) {
             e.printStackTrace();
         }
-
-
 
         return null;
     }
 
-    private Collection<AbstractNodeTemplate> getNodes(AbstractTopologyTemplate topology, Collection<String> nodeIds) {
-        Collection<AbstractNodeTemplate> result = new ArrayList<AbstractNodeTemplate>();
+    private Collection<AbstractNodeTemplate> getNodes(final AbstractTopologyTemplate topology,
+                                                      final Collection<String> nodeIds) {
+        final Collection<AbstractNodeTemplate> result = new ArrayList<>();
 
-        for (AbstractNodeTemplate node : topology.getNodeTemplates()) {
+        for (final AbstractNodeTemplate node : topology.getNodeTemplates()) {
             if (nodeIds.contains(node.getId())) {
                 result.add(node);
             }
@@ -103,11 +100,11 @@ public class Importer extends AbstractImporter {
         return result;
     }
 
-    private Collection<AbstractRelationshipTemplate> getRelations(AbstractTopologyTemplate topology,
-                                                                  Collection<String> relationIds) {
-        Collection<AbstractRelationshipTemplate> result = new ArrayList<AbstractRelationshipTemplate>();
+    private Collection<AbstractRelationshipTemplate> getRelations(final AbstractTopologyTemplate topology,
+                                                                  final Collection<String> relationIds) {
+        final Collection<AbstractRelationshipTemplate> result = new ArrayList<>();
 
-        for (AbstractRelationshipTemplate relation : topology.getRelationshipTemplates()) {
+        for (final AbstractRelationshipTemplate relation : topology.getRelationshipTemplates()) {
             if (relationIds.contains(relation.getId())) {
                 result.add(relation);
             }
@@ -117,15 +114,15 @@ public class Importer extends AbstractImporter {
     }
 
     public List<AbstractPlan> generateTransformationPlans(final CSARID sourceCsarId, final CSARID targetCsarId) {
-        final List<AbstractPlan> plans = new ArrayList<AbstractPlan>();
+        final List<AbstractPlan> plans = new ArrayList<>();
         try {
             final CSARContent sourceCsarContent = this.handler.getCSARContentForID(sourceCsarId);
-            final AbstractDefinitions sourceDefs = this.createContext(sourceCsarContent);
+            final AbstractDefinitions sourceDefs = createContext(sourceCsarContent);
             final CSARContent targetCsarContent = this.handler.getCSARContentForID(targetCsarId);
-            final AbstractDefinitions targetDefs = this.createContext(targetCsarContent);
+            final AbstractDefinitions targetDefs = createContext(targetCsarContent);
 
-            plans.addAll(this.buildTransformationPlans(sourceCsarId.getFileName(), sourceDefs,
-                                                       targetCsarId.getFileName(), targetDefs));
+            plans.addAll(buildTransformationPlans(sourceCsarId.getFileName(), sourceDefs, targetCsarId.getFileName(),
+                                                  targetDefs));
             return plans;
         }
         catch (final UserException e) {
@@ -145,7 +142,7 @@ public class Importer extends AbstractImporter {
      */
     public AbstractDefinitions getMainDefinitions(final CSARID csarId) {
         try {
-            return this.createContext(this.handler.getCSARContentForID(csarId));
+            return createContext(this.handler.getCSARContentForID(csarId));
         }
         catch (final UserException e) {
             Importer.LOG.error("Some error within input", e);

@@ -8,7 +8,6 @@ import javax.xml.namespace.QName;
 
 import org.opentosca.planbuilder.AbstractSimplePlanBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELBackupManagementProcessBuilder;
-import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELBuildProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELDefrostProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELFreezeProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELScaleOutProcessBuilder;
@@ -17,6 +16,7 @@ import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTerminationP
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTestManagementProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTransformationProcessBuilder;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
+import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
@@ -44,7 +44,8 @@ public abstract class AbstractImporter {
                                                final Collection<AbstractRelationshipTemplate> targetRelationshipTemplates) {
         final BPELTransformationProcessBuilder transformPlanBuilder = new BPELTransformationProcessBuilder();
 
-        return transformPlanBuilder.buildPlan(csarName, definitions, serviceTemplateId, sourceNodeTemplates,
+        return transformPlanBuilder.buildPlan(PlanType.TRANSFORM, csarName, definitions, serviceTemplateId,
+                                              "OpenTOSCA-Transformation-Interface", "adapt", sourceNodeTemplates,
                                               sourceRelationshipTemplates, targetNodeTemplates,
                                               targetRelationshipTemplates);
     }
@@ -55,16 +56,29 @@ public abstract class AbstractImporter {
                                                           final AbstractDefinitions targetDefinitions) {
         final List<AbstractPlan> plans = new ArrayList<>();
 
-
         final BPELTransformationProcessBuilder transformPlanBuilder = new BPELTransformationProcessBuilder();
 
-        plans.add(transformPlanBuilder.buildPlan(sourceCsarName, sourceDefinitions,
+        plans.add(transformPlanBuilder.buildPlan(PlanType.TRANSFORM, sourceCsarName, sourceDefinitions,
                                                  sourceDefinitions.getServiceTemplates().get(0).getQName(),
                                                  targetCsarName, targetDefinitions,
                                                  targetDefinitions.getServiceTemplates().get(0).getQName()));
+        return plans;
+    }
 
+    protected List<AbstractPlan> buildBuildPlans(final String sourceCsarName,
+                                                 final AbstractDefinitions sourceDefinitions) {
+        final List<AbstractPlan> plans = new ArrayList<>();
 
+        final BPELTransformationProcessBuilder transformPlanBuilder = new BPELTransformationProcessBuilder();
 
+        final AbstractServiceTemplate serviceTemplate = sourceDefinitions.getServiceTemplates().get(0);
+
+        plans.add(transformPlanBuilder.buildPlan(PlanType.BUILD, sourceCsarName, sourceDefinitions,
+                                                 serviceTemplate.getQName(), "OpenTOSCA-Lifecycle-Interface",
+                                                 "initiate", new ArrayList<AbstractNodeTemplate>(),
+                                                 new ArrayList<AbstractRelationshipTemplate>(),
+                                                 serviceTemplate.getTopologyTemplate().getNodeTemplates(),
+                                                 serviceTemplate.getTopologyTemplate().getRelationshipTemplates()));
         return plans;
     }
 
@@ -79,13 +93,14 @@ public abstract class AbstractImporter {
 
         final List<AbstractPlan> plans = new ArrayList<>();
 
-        AbstractSimplePlanBuilder buildPlanBuilder = new BPELBuildProcessBuilder();
         final BPELSituationAwareBuildProcessBuilder sitAwareBuilder = new BPELSituationAwareBuildProcessBuilder();
 
         if (!sitAwareBuilder.buildPlans(csarName, defs).isEmpty()) {
-            buildPlanBuilder = sitAwareBuilder;
+            // TODO: refactor situation builder to use the transformation concept too
+            plans.addAll(sitAwareBuilder.buildPlans(csarName, defs));
+        } else {
+            plans.addAll(buildBuildPlans(csarName, defs));
         }
-
 
         // FIXME: This does not work for me (Michael W. - 2018-02-19)
         // if (!this.hasPolicies(defs)) {
@@ -109,9 +124,7 @@ public abstract class AbstractImporter {
         final AbstractSimplePlanBuilder backupPlanBuilder = new BPELBackupManagementProcessBuilder();
         final AbstractSimplePlanBuilder testPlanBuilder = new BPELTestManagementProcessBuilder();
 
-
         plans.addAll(scalingPlanBuilder.buildPlans(csarName, defs));
-        plans.addAll(buildPlanBuilder.buildPlans(csarName, defs));
         plans.addAll(terminationPlanBuilder.buildPlans(csarName, defs));
         plans.addAll(freezePlanBuilder.buildPlans(csarName, defs));
         plans.addAll(defreezePlanBuilder.buildPlans(csarName, defs));
@@ -131,5 +144,4 @@ public abstract class AbstractImporter {
         }
         return false;
     }
-
 }

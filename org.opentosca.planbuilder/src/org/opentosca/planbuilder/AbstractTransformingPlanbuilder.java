@@ -1,6 +1,5 @@
 package org.opentosca.planbuilder;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,14 +12,14 @@ import java.util.Set;
 import javax.xml.namespace.QName;
 
 import org.opentosca.container.core.tosca.convention.Types;
-import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
-import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
 import org.opentosca.planbuilder.model.plan.AbstractActivity;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.Link;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.AbstractTransformationPlan;
 import org.opentosca.planbuilder.model.plan.ActivityType;
+import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
+import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractDeploymentArtifact;
 import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
@@ -36,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Abstract Class for generating an AbstractPlan implementing a Transformation Function from a
  * Source Model to a Target Model and their respective instances
- * 
+ *
  * @author Kálmán Képes - kalman.kepes@iaas.uni-stuttgart.de
  *
  */
@@ -56,7 +55,7 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
      * Creates a BuildPlan in WS-BPEL 2.0 by using the the referenced source and target service
      * templates as the transforming function between two models.
      * </p>
-     * 
+     *
      * @param sourceCsarName the name of the source csar
      * @param sourceDefinitions the id of the source definitions inside the referenced source csar
      * @param sourceServiceTemplateId the id of the source service templates inside the referenced
@@ -68,15 +67,16 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
      * @return a single AbstractPlan with a concrete implementation of a transformation function from
      *         the source to the target topology
      */
-    abstract public AbstractPlan buildPlan(String sourceCsarName, AbstractDefinitions sourceDefinitions,
-                                           QName sourceServiceTemplateId, String targetCsarName,
-                                           AbstractDefinitions targetDefinitions, QName targetServiceTemplateId);
+    abstract public AbstractPlan buildPlan(PlanType planType, String sourceCsarName,
+                                           AbstractDefinitions sourceDefinitions, QName sourceServiceTemplateId,
+                                           String targetCsarName, AbstractDefinitions targetDefinitions,
+                                           QName targetServiceTemplateId);
 
     /**
      * Generates a Set of Plans that is generated based on the given source and target definitions. This
      * generation is done for each Topology Template defined in both definitions therefore for each
      * combination of source and target topology template a plan is generated
-     * 
+     *
      * @param sourceCsarName the name of the source csar
      * @param sourceDefinitions the id of the source definitions inside the referenced source csar
      * @param targetCsarName the name of the target csar
@@ -87,85 +87,90 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
                                                   String targetCsarName, AbstractDefinitions targetDefinitions);
 
 
-    public AbstractTransformationPlan generateTFOG(String sourceCsarName, AbstractDefinitions sourceDefinitions,
-                                                   AbstractServiceTemplate sourceServiceTemplate,
-                                                   Collection<AbstractNodeTemplate> sourceNodeTemplates,
-                                                   Collection<AbstractRelationshipTemplate> sourceRelationshipTemplates,
-                                                   String targetCsarName, AbstractDefinitions targetDefinitions,
-                                                   AbstractServiceTemplate targetServiceTemplate,
-                                                   Collection<AbstractNodeTemplate> targetNodeTemplates,
-                                                   Collection<AbstractRelationshipTemplate> targetRelationshipTemplates) {
+    public AbstractTransformationPlan generateTFOG(final PlanType planType, final String planId,
+                                                   final String sourceCsarName,
+                                                   final AbstractDefinitions sourceDefinitions,
+                                                   final AbstractServiceTemplate sourceServiceTemplate,
+                                                   final Collection<AbstractNodeTemplate> sourceNodeTemplates,
+                                                   final Collection<AbstractRelationshipTemplate> sourceRelationshipTemplates,
+                                                   final String targetCsarName,
+                                                   final AbstractDefinitions targetDefinitions,
+                                                   final AbstractServiceTemplate targetServiceTemplate,
+                                                   final Collection<AbstractNodeTemplate> targetNodeTemplates,
+                                                   final Collection<AbstractRelationshipTemplate> targetRelationshipTemplates) {
 
-        Set<AbstractNodeTemplate> maxCommonSubgraph =
-            this.getMaxCommonSubgraph(new HashSet<AbstractNodeTemplate>(sourceNodeTemplates),
-                                      new HashSet<AbstractNodeTemplate>(sourceNodeTemplates),
-                                      new HashSet<AbstractNodeTemplate>(targetNodeTemplates),
-                                      new HashSet<AbstractNodeTemplate>());
+        final Set<AbstractNodeTemplate> maxCommonSubgraph =
+            getMaxCommonSubgraph(new HashSet<>(sourceNodeTemplates), new HashSet<>(sourceNodeTemplates),
+                                 new HashSet<>(targetNodeTemplates), new HashSet<AbstractNodeTemplate>());
 
         // find valid subset inside common subgraph, i.e.:
         // any component that is a platform node (every node without outgoing
         // hostedOn edges), or is a node in the subgraph where its (transitive) platform
         // nodes are also in the subgraph are valid
-        
-        Set<AbstractNodeTemplate> deployableMaxCommonSubgraph = this.getDeployableSubgraph(new HashSet<AbstractNodeTemplate>(this.getCorrespondingNodes(maxCommonSubgraph, targetNodeTemplates)));
+
+        final Set<AbstractNodeTemplate> deployableMaxCommonSubgraph =
+            this.getDeployableSubgraph(new HashSet<>(getCorrespondingNodes(maxCommonSubgraph, targetNodeTemplates)));
 
         // determine steps which have to be deleted from the original topology
-        Set<AbstractNodeTemplate> nodesToTerminate = new HashSet<AbstractNodeTemplate>(sourceNodeTemplates);
+        final Set<AbstractNodeTemplate> nodesToTerminate = new HashSet<>(sourceNodeTemplates);
         nodesToTerminate.removeAll(deployableMaxCommonSubgraph);
-        Collection<AbstractRelationshipTemplate> relationsToTerminate = this.getOutgoingRelations(nodesToTerminate);
+        final Collection<AbstractRelationshipTemplate> relationsToTerminate = getOutgoingRelations(nodesToTerminate);
 
-        AbstractPlan termPlan = AbstractTerminationPlanBuilder.generateTOG("transformTerminate"
-            + sourceDefinitions.getId() + "_to_" + targetDefinitions.getId(), sourceDefinitions, sourceServiceTemplate,
-                                                                           nodesToTerminate, relationsToTerminate);
+        final AbstractPlan termPlan =
+            AbstractTerminationPlanBuilder.generateTOG("transformTerminate" + sourceDefinitions.getId() + "_to_"
+                + targetDefinitions.getId(), sourceDefinitions, sourceServiceTemplate, nodesToTerminate,
+                                                       relationsToTerminate);
 
 
         // migrate node instances from old service instance to new service instance
-        AbstractPlan migrateInstancePlan =
-            this.generateInstanceMigrationPlan(deployableMaxCommonSubgraph,
-                                               this.getConnectingEdges(sourceRelationshipTemplates,
-                                                                       deployableMaxCommonSubgraph),
-                                               sourceDefinitions, targetDefinitions, sourceServiceTemplate,
-                                               targetServiceTemplate);
+        final AbstractPlan migrateInstancePlan =
+            generateInstanceMigrationPlan(deployableMaxCommonSubgraph,
+                                          getConnectingEdges(sourceRelationshipTemplates, deployableMaxCommonSubgraph),
+                                          sourceDefinitions, targetDefinitions, sourceServiceTemplate,
+                                          targetServiceTemplate);
 
         // determine steps which have to be start within the new topology
-        Set<AbstractNodeTemplate> nodesToStart = new HashSet<AbstractNodeTemplate>(targetNodeTemplates);
-        nodesToStart.removeAll(this.getCorrespondingNodes(deployableMaxCommonSubgraph, targetNodeTemplates));
-        
-        Collection<AbstractRelationshipTemplate> relationsToStart = this.getDeployableSubgraph(targetNodeTemplates, this.getOutgoingRelations(nodesToStart));
+        final Set<AbstractNodeTemplate> nodesToStart = new HashSet<>(targetNodeTemplates);
+        nodesToStart.removeAll(getCorrespondingNodes(deployableMaxCommonSubgraph, targetNodeTemplates));
 
-        AbstractPlan startPlan =
+        final Collection<AbstractRelationshipTemplate> relationsToStart =
+            this.getDeployableSubgraph(targetNodeTemplates, getOutgoingRelations(nodesToStart));
+
+        final AbstractPlan startPlan =
             AbstractBuildPlanBuilder.generatePOG("transformStart" + sourceDefinitions.getId() + "_to_"
                 + targetDefinitions.getId(), targetDefinitions, targetServiceTemplate, nodesToStart, relationsToStart);
 
+        AbstractTransformationPlan transPlan = mergePlans(
+                                                          "transformationPlan_" + termPlan.getServiceTemplate().getId()
+                                                              + "_to_" + startPlan.getServiceTemplate().getId(),
+                                                          planType, termPlan, migrateInstancePlan);
 
-        AbstractTransformationPlan transPlan =
-            this.mergePlans("transformationPlan_" + termPlan.getServiceTemplate().getId() + "_to_"
-                + startPlan.getServiceTemplate().getId(), PlanType.TRANSFORM, termPlan, migrateInstancePlan);
-
-        transPlan = this.mergePlans(
-                                    "transformationPlan_" + termPlan.getServiceTemplate().getId() + "_to_"
-                                        + startPlan.getServiceTemplate().getId(),
-                                    PlanType.TRANSFORM, transPlan, startPlan);
-
+        transPlan = mergePlans(planId, planType, transPlan, startPlan);
 
         return transPlan;
     }
-    
-    public Collection<AbstractRelationshipTemplate> getDeployableSubgraph(Collection<AbstractNodeTemplate> nodes, Collection<AbstractRelationshipTemplate> relations) {
-        Collection<AbstractRelationshipTemplate> result = new HashSet<AbstractRelationshipTemplate>();
-        for(AbstractRelationshipTemplate rel : relations) {
-            if(nodes.contains(rel.getSource()) && nodes.contains(rel.getTarget())) {
+
+    public Collection<AbstractRelationshipTemplate> getDeployableSubgraph(final Collection<AbstractNodeTemplate> nodes,
+                                                                          final Collection<AbstractRelationshipTemplate> relations) {
+        final Collection<AbstractRelationshipTemplate> result = new HashSet<>();
+        for (final AbstractRelationshipTemplate rel : relations) {
+            if (nodes.contains(rel.getSource()) && nodes.contains(rel.getTarget())) {
                 result.add(rel);
             }
         }
         return result;
     }
 
-    public AbstractTransformationPlan generateTFOG(String sourceCsarName, AbstractDefinitions sourceDefinitions,
-                                                   AbstractServiceTemplate sourceServiceTemplate, String targetCsarName,
-                                                   AbstractDefinitions targetDefinitions,
-                                                   AbstractServiceTemplate targetServiceTemplate) {
-        return this.generateTFOG(sourceCsarName, sourceDefinitions, sourceServiceTemplate,
+    public AbstractTransformationPlan generateTFOG(final PlanType planType, final String sourceCsarName,
+                                                   final AbstractDefinitions sourceDefinitions,
+                                                   final AbstractServiceTemplate sourceServiceTemplate,
+                                                   final String targetCsarName,
+                                                   final AbstractDefinitions targetDefinitions,
+                                                   final AbstractServiceTemplate targetServiceTemplate) {
+        final String planId =
+            "transformationPlan_" + sourceServiceTemplate.getId() + "_to_" + targetServiceTemplate.getId();
+
+        return this.generateTFOG(planType, planId, sourceCsarName, sourceDefinitions, sourceServiceTemplate,
                                  sourceServiceTemplate.getTopologyTemplate().getNodeTemplates(),
                                  sourceServiceTemplate.getTopologyTemplate().getRelationshipTemplates(), targetCsarName,
                                  targetDefinitions, targetServiceTemplate,
@@ -176,7 +181,7 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
     /**
      * Generates an abstract order of activities to transform from the source service template to the
      * target service template
-     * 
+     *
      * @param sourceCsarName the name of the source csar
      * @param sourceDefinitions the id of the source definitions inside the referenced source csar
      * @param sourceServiceTemplateId the id of the source service templates inside the referenced
@@ -188,74 +193,73 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
      * @return a single AbstractPlan containing abstract activities for a transformation function from
      *         the source to the target topology
      */
-    public AbstractTransformationPlan _generateTFOG(String sourceCsarName, AbstractDefinitions sourceDefinitions,
-                                                    AbstractServiceTemplate sourceServiceTemplate,
-                                                    String targetCsarName, AbstractDefinitions targetDefinitions,
-                                                    AbstractServiceTemplate targetServiceTemplate) {
-        AbstractTopologyTemplate sourceTopology = sourceServiceTemplate.getTopologyTemplate();
-        AbstractTopologyTemplate targetTopology = targetServiceTemplate.getTopologyTemplate();
+    public AbstractTransformationPlan _generateTFOG(final String sourceCsarName,
+                                                    final AbstractDefinitions sourceDefinitions,
+                                                    final AbstractServiceTemplate sourceServiceTemplate,
+                                                    final String targetCsarName,
+                                                    final AbstractDefinitions targetDefinitions,
+                                                    final AbstractServiceTemplate targetServiceTemplate) {
+        final AbstractTopologyTemplate sourceTopology = sourceServiceTemplate.getTopologyTemplate();
+        final AbstractTopologyTemplate targetTopology = targetServiceTemplate.getTopologyTemplate();
 
-        Set<AbstractNodeTemplate> maxCommonSubgraph =
-            this.getMaxCommonSubgraph(new HashSet<AbstractNodeTemplate>(sourceTopology.getNodeTemplates()),
-                                      new HashSet<AbstractNodeTemplate>(sourceTopology.getNodeTemplates()),
-                                      new HashSet<AbstractNodeTemplate>(targetTopology.getNodeTemplates()),
-                                      new HashSet<AbstractNodeTemplate>());
+        final Set<AbstractNodeTemplate> maxCommonSubgraph =
+            getMaxCommonSubgraph(new HashSet<>(sourceTopology.getNodeTemplates()),
+                                 new HashSet<>(sourceTopology.getNodeTemplates()),
+                                 new HashSet<>(targetTopology.getNodeTemplates()), new HashSet<AbstractNodeTemplate>());
 
         // find valid subset inside common subgraph, i.e.:
         // any component that is a platform node (every node without outgoing
         // hostedOn edges), or is a node in the subgraph where its (transitive) platform
         // nodes are also in the subgraph are valid
-        Set<AbstractNodeTemplate> deployableMaxCommonSubgraph = this.getDeployableSubgraph(maxCommonSubgraph);
+        final Set<AbstractNodeTemplate> deployableMaxCommonSubgraph = this.getDeployableSubgraph(maxCommonSubgraph);
 
         // determine steps which have to be deleted from the original topology
-        Set<AbstractNodeTemplate> nodesToTerminate =
-            new HashSet<AbstractNodeTemplate>(sourceTopology.getNodeTemplates());
+        final Set<AbstractNodeTemplate> nodesToTerminate = new HashSet<>(sourceTopology.getNodeTemplates());
         nodesToTerminate.removeAll(deployableMaxCommonSubgraph);
-        Collection<AbstractRelationshipTemplate> relationsToTerminate = this.getOutgoingRelations(nodesToTerminate);
+        final Collection<AbstractRelationshipTemplate> relationsToTerminate = getOutgoingRelations(nodesToTerminate);
 
-        AbstractPlan termPlan = AbstractTerminationPlanBuilder.generateTOG("transformTerminate"
-            + sourceDefinitions.getId() + "_to_" + targetDefinitions.getId(), sourceDefinitions, sourceServiceTemplate,
-                                                                           nodesToTerminate, relationsToTerminate);
+        final AbstractPlan termPlan =
+            AbstractTerminationPlanBuilder.generateTOG("transformTerminate" + sourceDefinitions.getId() + "_to_"
+                + targetDefinitions.getId(), sourceDefinitions, sourceServiceTemplate, nodesToTerminate,
+                                                       relationsToTerminate);
 
 
         // migrate node instances from old service instance to new service instance
-        AbstractPlan migrateInstancePlan =
-            this.generateInstanceMigrationPlan(deployableMaxCommonSubgraph,
-                                               this.getConnectingEdges(sourceTopology.getRelationshipTemplates(),
-                                                                       deployableMaxCommonSubgraph),
-                                               sourceDefinitions, targetDefinitions, sourceServiceTemplate,
-                                               targetServiceTemplate);
+        final AbstractPlan migrateInstancePlan =
+            generateInstanceMigrationPlan(deployableMaxCommonSubgraph,
+                                          getConnectingEdges(sourceTopology.getRelationshipTemplates(),
+                                                             deployableMaxCommonSubgraph),
+                                          sourceDefinitions, targetDefinitions, sourceServiceTemplate,
+                                          targetServiceTemplate);
 
         // determine steps which have to be start within the new topology
-        Set<AbstractNodeTemplate> nodesToStart = new HashSet<AbstractNodeTemplate>(targetTopology.getNodeTemplates());
-        nodesToStart.removeAll(this.getCorrespondingNodes(deployableMaxCommonSubgraph,
-                                                          targetTopology.getNodeTemplates()));
-        Collection<AbstractRelationshipTemplate> relationsToStart = this.getOutgoingRelations(nodesToStart);
+        final Set<AbstractNodeTemplate> nodesToStart = new HashSet<>(targetTopology.getNodeTemplates());
+        nodesToStart.removeAll(getCorrespondingNodes(deployableMaxCommonSubgraph, targetTopology.getNodeTemplates()));
+        final Collection<AbstractRelationshipTemplate> relationsToStart = getOutgoingRelations(nodesToStart);
 
-        AbstractPlan startPlan =
+        final AbstractPlan startPlan =
             AbstractBuildPlanBuilder.generatePOG("transformStart" + sourceDefinitions.getId() + "_to_"
                 + targetDefinitions.getId(), targetDefinitions, targetServiceTemplate, nodesToStart, relationsToStart);
 
 
-        AbstractTransformationPlan transPlan =
-            this.mergePlans("transformationPlan_" + termPlan.getServiceTemplate().getId() + "_to_"
-                + startPlan.getServiceTemplate().getId(), PlanType.TRANSFORM, termPlan, migrateInstancePlan);
+        AbstractTransformationPlan transPlan = mergePlans(
+                                                          "transformationPlan_" + termPlan.getServiceTemplate().getId()
+                                                              + "_to_" + startPlan.getServiceTemplate().getId(),
+                                                          PlanType.TRANSFORM, termPlan, migrateInstancePlan);
 
-        transPlan = this.mergePlans(
-                                    "transformationPlan_" + termPlan.getServiceTemplate().getId() + "_to_"
-                                        + startPlan.getServiceTemplate().getId(),
-                                    PlanType.TRANSFORM, transPlan, startPlan);
+        transPlan = mergePlans("transformationPlan_" + termPlan.getServiceTemplate().getId() + "_to_"
+            + startPlan.getServiceTemplate().getId(), PlanType.TRANSFORM, transPlan, startPlan);
 
 
         return transPlan;
     }
 
-    private AbstractTransformationPlan generateInstanceMigrationPlan(Collection<AbstractNodeTemplate> nodeTemplates,
-                                                                     Collection<AbstractRelationshipTemplate> relationshipTemplates,
-                                                                     AbstractDefinitions sourceDefinitions,
-                                                                     AbstractDefinitions targetDefinitions,
-                                                                     AbstractServiceTemplate sourceServiceTemplate,
-                                                                     AbstractServiceTemplate targetServiceTemplate) {
+    private AbstractTransformationPlan generateInstanceMigrationPlan(final Collection<AbstractNodeTemplate> nodeTemplates,
+                                                                     final Collection<AbstractRelationshipTemplate> relationshipTemplates,
+                                                                     final AbstractDefinitions sourceDefinitions,
+                                                                     final AbstractDefinitions targetDefinitions,
+                                                                     final AbstractServiceTemplate sourceServiceTemplate,
+                                                                     final AbstractServiceTemplate targetServiceTemplate) {
 
         // General flow is as within a build plan
 
@@ -264,8 +268,8 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         final Map<AbstractNodeTemplate, AbstractActivity> nodeMapping = new HashMap<>();
         final Map<AbstractRelationshipTemplate, AbstractActivity> relationMapping = new HashMap<>();
 
-        this.generateIMOGActivitesAndLinks(activities, links, nodeMapping, nodeTemplates, relationMapping,
-                                           relationshipTemplates);
+        generateIMOGActivitesAndLinks(activities, links, nodeMapping, nodeTemplates, relationMapping,
+                                      relationshipTemplates);
 
         return new AbstractTransformationPlan(
             "migrateInstance" + sourceDefinitions.getId() + "_to_" + targetDefinitions.getId(),
@@ -301,19 +305,19 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
                 links.add(new Link(nodeActivityMapping.get(relationshipTemplate.getTarget()), activity));
             } else if (baseType.equals(Types.dependsOnRelationType) | baseType.equals(Types.hostedOnRelationType)
                 | baseType.equals(Types.deployedOnRelationType)) {
-                links.add(new Link(nodeActivityMapping.get(relationshipTemplate.getTarget()), activity));
-                links.add(new Link(activity, nodeActivityMapping.get(relationshipTemplate.getSource())));
-            }
+                    links.add(new Link(nodeActivityMapping.get(relationshipTemplate.getTarget()), activity));
+                    links.add(new Link(activity, nodeActivityMapping.get(relationshipTemplate.getSource())));
+                }
 
         }
 
     }
 
-    private Collection<AbstractRelationshipTemplate> getConnectingEdges(Collection<AbstractRelationshipTemplate> allEdges,
-                                                                        Collection<AbstractNodeTemplate> subgraphNodes) {
-        Collection<AbstractRelationshipTemplate> connectingEdges = new HashSet<AbstractRelationshipTemplate>();
+    private Collection<AbstractRelationshipTemplate> getConnectingEdges(final Collection<AbstractRelationshipTemplate> allEdges,
+                                                                        final Collection<AbstractNodeTemplate> subgraphNodes) {
+        final Collection<AbstractRelationshipTemplate> connectingEdges = new HashSet<>();
 
-        for (AbstractRelationshipTemplate rel : allEdges) {
+        for (final AbstractRelationshipTemplate rel : allEdges) {
             if (subgraphNodes.contains(rel.getSource()) && subgraphNodes.contains(rel.getTarget())) {
                 connectingEdges.add(rel);
             }
@@ -322,12 +326,12 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         return connectingEdges;
     }
 
-    private Collection<AbstractNodeTemplate> getCorrespondingNodes(Collection<AbstractNodeTemplate> subgraph,
-                                                                  Collection<AbstractNodeTemplate> graph) {
-        Collection<AbstractNodeTemplate> correspondingNodes = new HashSet<AbstractNodeTemplate>();
-        for (AbstractNodeTemplate subgraphNode : subgraph) {
+    private Collection<AbstractNodeTemplate> getCorrespondingNodes(final Collection<AbstractNodeTemplate> subgraph,
+                                                                   final Collection<AbstractNodeTemplate> graph) {
+        final Collection<AbstractNodeTemplate> correspondingNodes = new HashSet<>();
+        for (final AbstractNodeTemplate subgraphNode : subgraph) {
             AbstractNodeTemplate correspondingNode = null;
-            if ((correspondingNode = this.getCorrespondingNode(subgraphNode, graph)) != null) {
+            if ((correspondingNode = getCorrespondingNode(subgraphNode, graph)) != null) {
                 correspondingNodes.add(correspondingNode);
             }
         }
@@ -335,9 +339,9 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         return correspondingNodes;
     }
 
-    protected AbstractNodeTemplate getCorrespondingNode(AbstractNodeTemplate subNode,
-                                                     Collection<AbstractNodeTemplate> graph) {
-        for (AbstractNodeTemplate graphNode : graph) {
+    protected AbstractNodeTemplate getCorrespondingNode(final AbstractNodeTemplate subNode,
+                                                        final Collection<AbstractNodeTemplate> graph) {
+        for (final AbstractNodeTemplate graphNode : graph) {
             if (this.mappingEquals(subNode, graphNode)) {
                 return graphNode;
             }
@@ -345,9 +349,9 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         return null;
     }
 
-    public AbstractRelationshipTemplate getCorrespondingEdge(AbstractRelationshipTemplate subEdge,
-                                                             Collection<AbstractRelationshipTemplate> graphEdges) {
-        for (AbstractRelationshipTemplate graphEdge : graphEdges) {
+    public AbstractRelationshipTemplate getCorrespondingEdge(final AbstractRelationshipTemplate subEdge,
+                                                             final Collection<AbstractRelationshipTemplate> graphEdges) {
+        for (final AbstractRelationshipTemplate graphEdge : graphEdges) {
             if (this.mappingEquals(subEdge, graphEdge)) {
                 return graphEdge;
             }
@@ -355,22 +359,23 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         return null;
     }
 
-    private AbstractTransformationPlan mergePlans(String id, PlanType type, AbstractPlan plan1, AbstractPlan plan2) {
+    private AbstractTransformationPlan mergePlans(final String id, final PlanType type, final AbstractPlan plan1,
+                                                  final AbstractPlan plan2) {
 
-        Collection<AbstractActivity> activities = new HashSet<AbstractActivity>();
+        final Collection<AbstractActivity> activities = new HashSet<>();
         activities.addAll(plan1.getActivites());
         activities.addAll(plan2.getActivites());
 
-        Collection<Link> links = new HashSet<Link>();
+        final Collection<Link> links = new HashSet<>();
         links.addAll(plan1.getLinks());
         links.addAll(plan2.getLinks());
 
-        Collection<AbstractActivity> sinks = plan1.getSinks();
-        Collection<AbstractActivity> sources = plan2.getSources();
+        final Collection<AbstractActivity> sinks = plan1.getSinks();
+        final Collection<AbstractActivity> sources = plan2.getSources();
 
         // naively we connect each sink with each source
-        for (AbstractActivity sink : sinks) {
-            for (AbstractActivity source : sources) {
+        for (final AbstractActivity sink : sinks) {
+            for (final AbstractActivity source : sources) {
                 links.add(new Link(sink, source));
             }
         }
@@ -382,16 +387,16 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
 
 
 
-    private Collection<AbstractRelationshipTemplate> getOutgoingRelations(Set<AbstractNodeTemplate> nodes) {
-        Collection<AbstractRelationshipTemplate> relations = new HashSet<AbstractRelationshipTemplate>();
-        for (AbstractNodeTemplate node : nodes) {
+    private Collection<AbstractRelationshipTemplate> getOutgoingRelations(final Set<AbstractNodeTemplate> nodes) {
+        final Collection<AbstractRelationshipTemplate> relations = new HashSet<>();
+        for (final AbstractNodeTemplate node : nodes) {
             relations.addAll(node.getOutgoingRelations());
         }
         return relations;
     }
 
-    private Collection<AbstractNodeTemplate> getNeededNodes(AbstractNodeTemplate nodeTemplate) {
-        for (IPlanBuilderTypePlugin typePlugin : this.pluginRegistry.getTypePlugins()) {
+    private Collection<AbstractNodeTemplate> getNeededNodes(final AbstractNodeTemplate nodeTemplate) {
+        for (final IPlanBuilderTypePlugin typePlugin : this.pluginRegistry.getTypePlugins()) {
             if (typePlugin.canHandleCreate(nodeTemplate)) {
                 if (typePlugin instanceof IPlanBuilderTypePlugin.NodeDependencyInformationInterface) {
                     return ((IPlanBuilderTypePlugin.NodeDependencyInformationInterface) typePlugin).getCreateDependencies(nodeTemplate);
@@ -401,17 +406,17 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         return null;
     }
 
-    public Set<AbstractNodeTemplate> getDeployableSubgraph(Set<AbstractNodeTemplate> graph) {
-        Set<AbstractNodeTemplate> validDeploymentSubgraph = new HashSet<AbstractNodeTemplate>(graph);
-        Set<AbstractNodeTemplate> toRemove = new HashSet<AbstractNodeTemplate>();
+    public Set<AbstractNodeTemplate> getDeployableSubgraph(final Set<AbstractNodeTemplate> graph) {
+        final Set<AbstractNodeTemplate> validDeploymentSubgraph = new HashSet<>(graph);
+        final Set<AbstractNodeTemplate> toRemove = new HashSet<>();
 
-        for (AbstractNodeTemplate node : graph) {
+        for (final AbstractNodeTemplate node : graph) {
 
-            if (this.isRunning(node) && this.hasNoHostingNodes(node)) {
+            if (isRunning(node) && hasNoHostingNodes(node)) {
                 continue;
             }
 
-            Collection<AbstractNodeTemplate> neededNodes = this.getNeededNodes(node);
+            final Collection<AbstractNodeTemplate> neededNodes = getNeededNodes(node);
 
             // no plugin found that can deploy given node on whole topology
             if (neededNodes == null) {
@@ -420,7 +425,7 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
             }
 
             // if the needed nodes are not in the graph we cannot deploy it
-            if (!this.contains(graph, neededNodes)) {
+            if (!contains(graph, neededNodes)) {
                 toRemove.add(node);
                 continue;
             }
@@ -434,22 +439,23 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
             return getDeployableSubgraph(validDeploymentSubgraph);
         }
     }
-    
-    private boolean hasNoHostingNodes(AbstractNodeTemplate nodeTemplate) {
-        for(AbstractRelationshipTemplate rel :nodeTemplate.getOutgoingRelations()) {
-            if(rel.getType().equals(Types.hostedOnRelationType) | rel.getType().equals(Types.dependsOnRelationType)) {
+
+    private boolean hasNoHostingNodes(final AbstractNodeTemplate nodeTemplate) {
+        for (final AbstractRelationshipTemplate rel : nodeTemplate.getOutgoingRelations()) {
+            if (rel.getType().equals(Types.hostedOnRelationType) | rel.getType().equals(Types.dependsOnRelationType)) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
-    private boolean contains(Collection<AbstractNodeTemplate> subgraph1, Collection<AbstractNodeTemplate> subgraph2) {
+    private boolean contains(final Collection<AbstractNodeTemplate> subgraph1,
+                             final Collection<AbstractNodeTemplate> subgraph2) {
 
-        for (AbstractNodeTemplate nodeInGraph2 : subgraph2) {
+        for (final AbstractNodeTemplate nodeInGraph2 : subgraph2) {
             boolean matched = false;
-            for (AbstractNodeTemplate nodeInGraph1 : subgraph1) {
+            for (final AbstractNodeTemplate nodeInGraph1 : subgraph1) {
                 if (this.mappingEquals(nodeInGraph1, nodeInGraph2)) {
                     matched = true;
                     break;
@@ -469,45 +475,45 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
     // TODO FIXME this is a really naive implementation until we can integrate a
     // proper(i.e. efficient) subgraph calculation
     // based on https://stackoverflow.com/a/14644158
-    private Set<AbstractNodeTemplate> getMaxCommonSubgraph(Set<AbstractNodeTemplate> vertices,
-                                                           Set<AbstractNodeTemplate> graph1,
-                                                           Set<AbstractNodeTemplate> graph2,
-                                                           Set<AbstractNodeTemplate> currentSubset) {
+    private Set<AbstractNodeTemplate> getMaxCommonSubgraph(final Set<AbstractNodeTemplate> vertices,
+                                                           final Set<AbstractNodeTemplate> graph1,
+                                                           final Set<AbstractNodeTemplate> graph2,
+                                                           final Set<AbstractNodeTemplate> currentSubset) {
 
-        LOG.debug("Finding MaxCommon Subgraph with vertices {}", this.printCandidate(vertices));
+        LOG.debug("Finding MaxCommon Subgraph with vertices {}", printCandidate(vertices));
         if (vertices.isEmpty()) {
-            if (this.isCommonSubgraph(graph1, graph2, currentSubset)) {
-                LOG.debug("Returning the current subset of {}", this.printCandidate(currentSubset));
-                return new HashSet<AbstractNodeTemplate>(currentSubset);
+            if (isCommonSubgraph(graph1, graph2, currentSubset)) {
+                LOG.debug("Returning the current subset of {}", printCandidate(currentSubset));
+                return new HashSet<>(currentSubset);
             } else {
-                return new HashSet<AbstractNodeTemplate>();
+                return new HashSet<>();
             }
         }
 
 
 
-        AbstractNodeTemplate v = this.pop(vertices);
+        final AbstractNodeTemplate v = pop(vertices);
 
         LOG.debug("Removed vertex {}", v.getId());
-        Set<AbstractNodeTemplate> cand1 = this.getMaxCommonSubgraph(vertices, graph1, graph2, currentSubset);
+        final Set<AbstractNodeTemplate> cand1 = getMaxCommonSubgraph(vertices, graph1, graph2, currentSubset);
         currentSubset.add(v);
-        LOG.debug("Current subset {}", this.printCandidate(currentSubset));
+        LOG.debug("Current subset {}", printCandidate(currentSubset));
 
 
-        Set<AbstractNodeTemplate> cand2 = new HashSet<AbstractNodeTemplate>();
+        Set<AbstractNodeTemplate> cand2 = new HashSet<>();
 
-        if (this.isCommonSubgraph(graph1, graph2, currentSubset)) {
-            cand2 = this.getMaxCommonSubgraph(vertices, graph1, graph2, currentSubset);
+        if (isCommonSubgraph(graph1, graph2, currentSubset)) {
+            cand2 = getMaxCommonSubgraph(vertices, graph1, graph2, currentSubset);
         } else {
-            LOG.debug("Removing vertex {} from current subset {}", v.getId(), this.printCandidate(currentSubset));
+            LOG.debug("Removing vertex {} from current subset {}", v.getId(), printCandidate(currentSubset));
             currentSubset.remove(v);
         }
 
 
 
         LOG.debug("Current candidates:");
-        LOG.debug("Candidate1: {}", this.printCandidate(cand1));
-        LOG.debug("Candidate2: {}", this.printCandidate(cand2));
+        LOG.debug("Candidate1: {}", printCandidate(cand1));
+        LOG.debug("Candidate2: {}", printCandidate(cand2));
 
         if (cand1.size() > cand2.size()) {
             LOG.debug("Returning cand1");
@@ -515,14 +521,14 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
             LOG.debug("Returning cand2");
         }
 
-        return (cand1.size() > cand2.size()) ? cand1 : cand2;
+        return cand1.size() > cand2.size() ? cand1 : cand2;
     }
 
-    private String printCandidate(Collection<AbstractNodeTemplate> nodeTemplates) {
+    private String printCandidate(final Collection<AbstractNodeTemplate> nodeTemplates) {
         String print = "{";
 
 
-        AbstractNodeTemplate[] nodes = nodeTemplates.toArray(new AbstractNodeTemplate[nodeTemplates.size()]);
+        final AbstractNodeTemplate[] nodes = nodeTemplates.toArray(new AbstractNodeTemplate[nodeTemplates.size()]);
 
 
         for (int i = 0; i < nodes.length; i++) {
@@ -539,10 +545,10 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         return print;
     }
 
-    private AbstractNodeTemplate pop(Set<AbstractNodeTemplate> nodes) {
+    private AbstractNodeTemplate pop(final Set<AbstractNodeTemplate> nodes) {
         AbstractNodeTemplate pop = null;
 
-        Iterator<AbstractNodeTemplate> iter = nodes.iterator();
+        final Iterator<AbstractNodeTemplate> iter = nodes.iterator();
 
         if (iter.hasNext()) {
             pop = iter.next();
@@ -553,21 +559,21 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         return pop;
     }
 
-    private boolean isCommonSubgraph(Set<AbstractNodeTemplate> graph1, Set<AbstractNodeTemplate> graph2,
-                                     Set<AbstractNodeTemplate> subgraph) {
+    private boolean isCommonSubgraph(final Set<AbstractNodeTemplate> graph1, final Set<AbstractNodeTemplate> graph2,
+                                     final Set<AbstractNodeTemplate> subgraph) {
 
-        for (AbstractNodeTemplate nodeTemplate : subgraph) {
+        for (final AbstractNodeTemplate nodeTemplate : subgraph) {
             boolean matchedIn1 = false;
             boolean matchedIn2 = false;
 
-            for (AbstractNodeTemplate nodeIn1 : graph1) {
+            for (final AbstractNodeTemplate nodeIn1 : graph1) {
                 if (this.mappingEquals(nodeTemplate, nodeIn1)) {
                     matchedIn1 = true;
                     break;
                 }
             }
 
-            for (AbstractNodeTemplate nodeIn2 : graph2) {
+            for (final AbstractNodeTemplate nodeIn2 : graph2) {
                 if (this.mappingEquals(nodeTemplate, nodeIn2)) {
                     matchedIn2 = true;
                     break;
@@ -582,7 +588,7 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         return true;
     }
 
-    private boolean mappingEquals(AbstractRelationshipTemplate rel1, AbstractRelationshipTemplate rel2) {
+    private boolean mappingEquals(final AbstractRelationshipTemplate rel1, final AbstractRelationshipTemplate rel2) {
         if (!rel1.getType().equals(rel2.getType())) {
             return false;
         }
@@ -592,15 +598,15 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
             && this.mappingEquals(rel1.getTarget(), rel2.getTarget()))) {
             return false;
         }
-        
-        if(!rel1.getId().equals(rel2.getId())) {
+
+        if (!rel1.getId().equals(rel2.getId())) {
             return false;
         }
 
         return true;
     }
 
-    private boolean mappingEquals(AbstractNodeTemplate node1, AbstractNodeTemplate node2) {
+    private boolean mappingEquals(final AbstractNodeTemplate node1, final AbstractNodeTemplate node2) {
         LOG.debug("Matching node {} with node {} ", node1.getId(), node2.getId());
         if (!node1.getType().getId().equals(node2.getType().getId())) {
             return false;
@@ -610,9 +616,9 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         if (node1.getDeploymentArtifacts().size() != node2.getDeploymentArtifacts().size()) {
             return false;
         } else {
-            for (AbstractDeploymentArtifact da : node1.getDeploymentArtifacts()) {
+            for (final AbstractDeploymentArtifact da : node1.getDeploymentArtifacts()) {
                 boolean matched = false;
-                for (AbstractDeploymentArtifact da2 : node2.getDeploymentArtifacts()) {
+                for (final AbstractDeploymentArtifact da2 : node2.getDeploymentArtifacts()) {
                     if (da.getArtifactType().equals(da.getArtifactType())) {
                         if (da.getArtifactRef().getId().equals(da2.getArtifactRef().getId())) {
                             // up to this point only the type and id of the artifact template match, a deeper mathcing
@@ -642,12 +648,12 @@ public abstract class AbstractTransformingPlanbuilder extends AbstractPlanBuilde
         // return false;
         // }
         LOG.debug("Matched node {} with node {} ", node1.getId(), node2.getId());
-        
-        
-        if(!node1.getId().equals(node2.getId())) {
+
+
+        if (!node1.getId().equals(node2.getId())) {
             return false;
         }
-        
+
         return true;
     }
 

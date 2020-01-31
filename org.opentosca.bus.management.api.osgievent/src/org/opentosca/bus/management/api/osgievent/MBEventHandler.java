@@ -246,8 +246,6 @@ public class MBEventHandler implements EventHandler {
                 return;
             }
 
-
-
             final WSDLEndpoint endpoint = getAdaptationPlanEndpoint(currentConfigNodeIds, currentConfigRelationIds,
                                                                     targetConfigNodeIds, targetConfigRelationIds);
             final String correlationID = String.valueOf(System.currentTimeMillis());

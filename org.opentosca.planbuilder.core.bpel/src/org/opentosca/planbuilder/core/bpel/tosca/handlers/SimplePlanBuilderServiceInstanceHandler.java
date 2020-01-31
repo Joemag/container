@@ -2,31 +2,23 @@ package org.opentosca.planbuilder.core.bpel.tosca.handlers;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
 import java.net.URLEncoder;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.opentosca.planbuilder.core.bpel.fragments.BPELProcessFragments;
-import org.opentosca.planbuilder.core.bpel.handlers.BPELPlanHandler;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
 import org.opentosca.planbuilder.model.plan.bpel.BPELScope;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
 import org.opentosca.planbuilder.plugins.context.Property2VariableMapping;
 import org.opentosca.planbuilder.plugins.context.PropertyVariable;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
@@ -90,9 +82,11 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
         return null;
     }
 
-    public void addServiceInstanceHandlingFromInput(final BPELPlan plan, String serviceInstancesUrlVarName,
-                                                    String serviceInstanceURLVarName, String serviceTemplateUrlVarName,
-                                                    String serviceInstanceIdVarName, String planInstanceURLVarName) {
+    public void addServiceInstanceHandlingFromInput(final BPELPlan plan, final String serviceInstancesUrlVarName,
+                                                    String serviceInstanceURLVarName,
+                                                    final String serviceTemplateUrlVarName,
+                                                    final String serviceInstanceIdVarName,
+                                                    final String planInstanceURLVarName) {
         // add instancedata api url element to plan input message
         this.bpelProcessHandler.addStringElementToPlanRequest(InstanceDataAPIUrlKeyword, plan);
         appendAssignFromInputToVariable(plan, InstanceDataAPIUrlKeyword, serviceInstancesUrlVarName);
@@ -118,29 +112,29 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
     public void addServiceInstanceHandlingFromInput(final BPELPlan plan) {
         // add instancedata api url element to plan input message
         this.bpelProcessHandler.addStringElementToPlanRequest(InstanceDataAPIUrlKeyword, plan);
-        String instanceDataAPIUrlVarName = this.addInstanceDataAPIURLVariable(plan);
+        final String instanceDataAPIUrlVarName = addInstanceDataAPIURLVariable(plan);
         appendAssignFromInputToVariable(plan, InstanceDataAPIUrlKeyword, instanceDataAPIUrlVarName);
 
         this.bpelProcessHandler.addStringElementToPlanRequest(ServiceInstanceURLVarKeyword, plan);
-        String serviceInstanceURLVarName = this.addServiceInstanceURLVariable(plan);
+        String serviceInstanceURLVarName = addServiceInstanceURLVariable(plan);
         serviceInstanceURLVarName =
             appendAssignFromInputToVariable(plan, ServiceInstanceURLVarKeyword, serviceInstanceURLVarName);
 
-        String serviceTemplateUrlVarName = this.addServiceTemplateURLVariable(plan);
+        final String serviceTemplateUrlVarName = addServiceTemplateURLVariable(plan);
         addAssignServiceTemplateURLVariable(plan, instanceDataAPIUrlVarName, serviceTemplateUrlVarName);
 
-        String serviceInstanceIdVarName = this.addServiceInstanceIDVariable(plan);
+        final String serviceInstanceIdVarName = addServiceInstanceIDVariable(plan);
         addAssignServiceInstanceIdVarFromServiceInstanceURLVar(plan, serviceInstanceURLVarName,
                                                                serviceInstanceIdVarName);
 
-        String planInstanceURLVarName = this.addPlanInstanceURLVariable(plan);
+        final String planInstanceURLVarName = addPlanInstanceURLVariable(plan);
         addAssignManagementPlanInstanceUrlVariable(plan, planInstanceURLVarName, serviceInstanceURLVarName);
     }
 
     /**
      * Adds code to initialize serviceInstance at the given instance data API and sets the given service
      * instance variables with the created serviceInstance
-     * 
+     *
      * @param plan the plan to add the code to
      * @param instanceDataAPIVariableName the variable to hold the instance data api url
      * @param serviceInstanceUrlVarName the variable to hold the serviceInstanceUrl
@@ -148,18 +142,18 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
      * @param serviceTemplateUrlVarName the variable to hold the serviceTemplateUrl
      * @param planInstanceUrlVarName the variable to hold the planInstance
      */
-    public void appendCreateServiceInstance(final BPELPlan plan, String instanceDataAPIVariableName,
+    public void appendCreateServiceInstance(final BPELPlan plan, final String instanceDataAPIVariableName,
                                             final String serviceInstanceUrlVarName,
                                             final String serviceInstanceIdVarName,
                                             final String serviceTemplateUrlVarName, final String planInstanceUrlVarName,
-                                            boolean isManagementPlan) {
+                                            final boolean isManagementPlan) {
 
         appendServiceInstanceInitCode(plan, instanceDataAPIVariableName, serviceInstanceUrlVarName,
                                       serviceInstanceIdVarName, serviceTemplateUrlVarName, planInstanceUrlVarName,
                                       isManagementPlan);
     }
 
-    public void appendAssignServiceInstanceIdToOutput(BPELPlan plan, String serviceInstanceIdVarName) {
+    public void appendAssignServiceInstanceIdToOutput(final BPELPlan plan, final String serviceInstanceIdVarName) {
         addAssignOutputWithServiceInstanceId(plan, serviceInstanceIdVarName);
     }
 
@@ -172,16 +166,16 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
      */
     public void appendCreateServiceInstanceVarsAndAnitializeWithInstanceDataAPI(final BPELPlan plan) {
 
-        String instanceDataAPIVariableName = this.addInstanceDataAPIURLVariable(plan);
+        final String instanceDataAPIVariableName = addInstanceDataAPIURLVariable(plan);
 
         this.bpelProcessHandler.addStringElementToPlanRequest(InstanceDataAPIUrlKeyword, plan);
         final String instanceDataAPIVarName =
             appendAssignFromInputToVariable(plan, InstanceDataAPIUrlKeyword, instanceDataAPIVariableName);
 
-        final String serviceInstanceUrlVarName = this.addServiceInstanceURLVariable(plan);
-        final String serviceInstanceIdVarName = this.addServiceInstanceIDVariable(plan);
-        final String serviceTemplateUrlVarName = this.addServiceTemplateURLVariable(plan);
-        final String planInstanceUrlVarName = this.addPlanInstanceURLVariable(plan);
+        final String serviceInstanceUrlVarName = addServiceInstanceURLVariable(plan);
+        final String serviceInstanceIdVarName = addServiceInstanceIDVariable(plan);
+        final String serviceTemplateUrlVarName = addServiceTemplateURLVariable(plan);
+        final String planInstanceUrlVarName = addPlanInstanceURLVariable(plan);
         boolean isManagementPlan = false;
         if (plan.getType().equals(PlanType.MANAGE)) {
             isManagementPlan = true;
@@ -189,19 +183,20 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
 
         appendServiceInstanceInitCode(plan, instanceDataAPIVarName, serviceInstanceUrlVarName, serviceInstanceIdVarName,
                                       serviceTemplateUrlVarName, planInstanceUrlVarName, isManagementPlan);
-        String serviceInstanceVarName =
-            getLowestId(findServiceInstanceIdVarNames(bpelProcessHandler, plan), ServiceInstanceURLVarKeyword);
+        final String serviceInstanceVarName =
+            getLowestId(findServiceInstanceIdVarNames(this.bpelProcessHandler, plan), ServiceInstanceURLVarKeyword);
         addAssignOutputWithServiceInstanceId(plan, serviceInstanceVarName);
     }
-    
+
     public boolean appendSetServiceInstanceStateAsChild(final BPELPlan plan, final Element insertAsChild,
-                                                 final String state, String urlVarName) {
+                                                        final String state, final String urlVarName) {
         final String xsdNamespace = "http://www.w3.org/2001/XMLSchema";
         final String xsdPrefix = "xsd" + System.currentTimeMillis();
         this.bpelProcessHandler.addNamespaceToBPELDoc(xsdPrefix, xsdNamespace, plan);
 
         // generate any type variable for REST call response
-        final String restCallResponseVarName = "bpel4restlightVarResponse_setServiceInstanceState_"+state+ "_" + System.currentTimeMillis();
+        final String restCallResponseVarName =
+            "bpel4restlightVarResponse_setServiceInstanceState_" + state + "_" + System.currentTimeMillis();
         final QName rescalResponseVarDeclId = new QName(xsdNamespace, "anyType", xsdPrefix);
 
         if (!this.bpelProcessHandler.addVariable(restCallResponseVarName, BPELPlan.VariableType.TYPE,
@@ -209,7 +204,8 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
             return false;
         }
 
-        final String restCallRequestVarName = "bpel4restlightVarRequest_setServiceInstanceState_"+ state +"_" + System.currentTimeMillis();
+        final String restCallRequestVarName =
+            "bpel4restlightVarRequest_setServiceInstanceState_" + state + "_" + System.currentTimeMillis();
         final QName rescalRequestVarDeclId = new QName(xsdNamespace, "string", xsdPrefix);
 
         if (!this.bpelProcessHandler.addVariable(restCallRequestVarName, BPELPlan.VariableType.TYPE,
@@ -225,7 +221,7 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
                                                                                restCallRequestVarName);
             assignRequestWithStateNode = plan.getBpelDocument().importNode(assignRequestWithStateNode, true);
             insertAsChild.appendChild(assignRequestWithStateNode);
-            
+
         }
         catch (final IOException e) {
             // TODO Auto-generated catch block
@@ -249,7 +245,7 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
             Node setInstanceStateRequestNode =
                 this.fragments.createBPEL4RESTLightPutStateAsNode(urlVarName, restCallRequestVarName);
             setInstanceStateRequestNode = plan.getBpelDocument().importNode(setInstanceStateRequestNode, true);
-            insertAsChild.appendChild(setInstanceStateRequestNode);            
+            insertAsChild.appendChild(setInstanceStateRequestNode);
         }
         catch (final IOException e) {
             // TODO Auto-generated catch block
@@ -261,18 +257,19 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
         }
 
         return true;
-        
+
     }
 
     public boolean appendSetServiceInstanceState(final BPELPlan plan, final Element insertBeforeElement,
-                                                 final String state, String serviceInstanceURLVarName) {
+                                                 final String state, final String serviceInstanceURLVarName) {
 
         final String xsdNamespace = "http://www.w3.org/2001/XMLSchema";
         final String xsdPrefix = "xsd" + System.currentTimeMillis();
         this.bpelProcessHandler.addNamespaceToBPELDoc(xsdPrefix, xsdNamespace, plan);
 
         // generate any type variable for REST call response
-        final String restCallResponseVarName = "bpel4restlightVarResponse_setServiceInstanceState_"+state+ "_" + System.currentTimeMillis();
+        final String restCallResponseVarName =
+            "bpel4restlightVarResponse_setServiceInstanceState_" + state + "_" + System.currentTimeMillis();
         final QName rescalResponseVarDeclId = new QName(xsdNamespace, "anyType", xsdPrefix);
 
         if (!this.bpelProcessHandler.addVariable(restCallResponseVarName, BPELPlan.VariableType.TYPE,
@@ -280,7 +277,8 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
             return false;
         }
 
-        final String restCallRequestVarName = "bpel4restlightVarRequest_setServiceInstanceState_"+ state +"_" + System.currentTimeMillis();
+        final String restCallRequestVarName =
+            "bpel4restlightVarRequest_setServiceInstanceState_" + state + "_" + System.currentTimeMillis();
         final QName rescalRequestVarDeclId = new QName(xsdNamespace, "string", xsdPrefix);
 
         if (!this.bpelProcessHandler.addVariable(restCallRequestVarName, BPELPlan.VariableType.TYPE,
@@ -333,10 +331,11 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
     }
 
     public boolean appendInitPropertyVariablesFromServiceInstanceData(final BPELPlan plan,
-                                                                      Property2VariableMapping propMap,
-                                                                      String serviceTemplateUrlVarName,
-                                                                      Collection<BPELScope> scopes,
-                                                                      AbstractServiceTemplate serviceTemplate, String query) {
+                                                                      final Property2VariableMapping propMap,
+                                                                      final String serviceTemplateUrlVarName,
+                                                                      final Collection<BPELScope> scopes,
+                                                                      final AbstractServiceTemplate serviceTemplate,
+                                                                      final String query) {
         final String xsdNamespace = "http://www.w3.org/2001/XMLSchema";
         final String xsdPrefix = "xsd" + System.currentTimeMillis();
         this.bpelProcessHandler.addNamespaceToBPELDoc(xsdPrefix, xsdNamespace, plan);
@@ -405,7 +404,7 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
             try {
                 Node assignNodeInstanceIDFromInstanceDataAPIQueryResponse =
                     this.fragments.createAssignSelectFirstNodeInstanceAndAssignToStringVarAsNode(restCallResponseVarName,
-                                                                                              tempNodeInstanceIDVarName);
+                                                                                                 tempNodeInstanceIDVarName);
                 assignNodeInstanceIDFromInstanceDataAPIQueryResponse =
                     templatePlan.getBpelDocument().importNode(assignNodeInstanceIDFromInstanceDataAPIQueryResponse,
                                                               true);
@@ -423,7 +422,7 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
             try {
                 Node nodeInstancePropertiesGETNode =
                     this.fragments.createRESTExtensionGETForInstancePropertiesAsNode(tempNodeInstanceIDVarName,
-                                                                                         restCallResponseVarName);
+                                                                                     restCallResponseVarName);
                 nodeInstancePropertiesGETNode =
                     templatePlan.getBpelDocument().importNode(nodeInstancePropertiesGETNode, true);
                 plan.getBpelMainFlowElement().getParentNode().insertBefore(nodeInstancePropertiesGETNode,
@@ -446,8 +445,8 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
                 if (propChildNodes.item(index).getNodeType() == Node.ELEMENT_NODE) {
                     final Element childElement = (Element) propChildNodes.item(index);
                     // find bpelVariable
-                    for (PropertyVariable var : propMap.getNodePropertyVariables(serviceTemplate,
-                                                                                 templatePlan.getNodeTemplate())) {
+                    for (final PropertyVariable var : propMap.getNodePropertyVariables(serviceTemplate,
+                                                                                       templatePlan.getNodeTemplate())) {
                         if (var.getPropertyName().equals(childElement.getLocalName())) {
                             element2BpelVarNameMap.put(childElement, var.getVariableName());
                         }
@@ -476,14 +475,16 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
 
     public boolean appendInitPropertyVariablesFromServiceInstanceData(final BPELPlan plan,
                                                                       final Property2VariableMapping propMap,
-                                                                      String serviceTemplateUrlVarName,
-                                                                      AbstractServiceTemplate serviceTemplate, String query) {
+                                                                      final String serviceTemplateUrlVarName,
+                                                                      final AbstractServiceTemplate serviceTemplate,
+                                                                      final String query) {
         return this.appendInitPropertyVariablesFromServiceInstanceData(plan, propMap, serviceTemplateUrlVarName,
-                                                                       plan.getTemplateBuildPlans(), serviceTemplate, query);
+                                                                       plan.getTemplateBuildPlans(), serviceTemplate,
+                                                                       query);
     }
 
-    private void addAssignServiceTemplateURLVariable(final BPELPlan plan, String serviceInstancesUrlVarName,
-                                                     String serviceTemplateUrlVariableName) {
+    private void addAssignServiceTemplateURLVariable(final BPELPlan plan, final String serviceInstancesUrlVarName,
+                                                     final String serviceTemplateUrlVariableName) {
 
         // create variable
         if (serviceTemplateUrlVariableName == null) {
@@ -508,8 +509,8 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
         }
     }
 
-    private void addAssignManagementPlanInstanceUrlVariable(final BPELPlan plan, String planInstanceUrlVarName,
-                                                            String serviceTemplateInstanceUrlVarName) {
+    private void addAssignManagementPlanInstanceUrlVariable(final BPELPlan plan, final String planInstanceUrlVarName,
+                                                            final String serviceTemplateInstanceUrlVarName) {
         if (planInstanceUrlVarName == null) {
             throw new RuntimeException("PlanInstanceURLVarName is null in plan " + plan.getId());
         }
@@ -536,7 +537,7 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
         }
     }
 
-    private void addAssignOutputWithServiceInstanceId(final BPELPlan plan, String serviceInstanceVarName) {
+    private void addAssignOutputWithServiceInstanceId(final BPELPlan plan, final String serviceInstanceVarName) {
         this.bpelProcessHandler.addStringElementToPlanResponse("instanceId", plan);
 
         if (serviceInstanceVarName == null) {
@@ -562,7 +563,7 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
     /**
      * Generates code to create service instance at the instance data api based on the given plan with
      * the referenced service instance variables
-     * 
+     *
      * @param plan the plan to add the code to
      * @param instanceDataAPIUrlVarName the variable storing the url to the instance data api
      * @param serviceInstanceUrlVarName the variable for storing the serviceInstanceUrl
@@ -572,9 +573,10 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
      * @return
      */
     private void appendServiceInstanceInitCode(final BPELPlan plan, final String instanceDataAPIUrlVarName,
-                                               String serviceInstanceUrlVarName, String serviceInstanceIdVarName,
-                                               String serviceTemplateUrlVarName, String planInstanceUrlVarName,
-                                               boolean isManagementPlan) {
+                                               final String serviceInstanceUrlVarName,
+                                               final String serviceInstanceIdVarName,
+                                               final String serviceTemplateUrlVarName,
+                                               final String planInstanceUrlVarName, final boolean isManagementPlan) {
         // here we'll add code to:
         // instantiate a full instance of the serviceTemplate at the container
         // instancedata api
@@ -610,13 +612,15 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
         this.bpelProcessHandler.addNamespaceToBPELDoc(requestVariableQName.getPrefix(),
                                                       requestVariableQName.getNamespaceURI(), plan);
 
-        final String restCallResponseVarName = "bpel4restlightVarResponse_appendServiceInstanceInit" + System.currentTimeMillis();
+        final String restCallResponseVarName =
+            "bpel4restlightVarResponse_appendServiceInstanceInit" + System.currentTimeMillis();
         if (!this.bpelProcessHandler.addVariable(restCallResponseVarName, BPELPlan.VariableType.TYPE,
                                                  responseVariableQName, plan)) {
             throw new RuntimeException("Couldn't create REST response variable");
         }
 
-        final String restCallRequestVarName = "bpel4restlightVarRequest_appendServiceInstanceInit" + System.currentTimeMillis();
+        final String restCallRequestVarName =
+            "bpel4restlightVarRequest_appendServiceInstanceInit" + System.currentTimeMillis();
         if (!this.bpelProcessHandler.addVariable(restCallRequestVarName, BPELPlan.VariableType.ELEMENT,
                                                  requestVariableQName, plan)) {
             throw new RuntimeException("Couldn't create REST request variable");
@@ -675,7 +679,7 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
         final String planName = plan.getId().substring(plan.getId().lastIndexOf("}") + 1);
 
         try {
-            String serviceInstanceCorrelationIdVarName =
+            final String serviceInstanceCorrelationIdVarName =
                 this.bpelProcessHandler.addGlobalStringVariable("ServiceInstanceCorrelationID", plan);
             Node assignCorr =
                 this.fragments.generateAssignFromInputMessageToStringVariableAsNode("CorrelationID",
@@ -719,12 +723,12 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
         }
     }
 
-    public void initServiceInstancesURLVariableFromAvailableServiceInstanceUrlVar(BPELPlan plan,
-                                                                                  String availableServiceInstanceUrlVar,
-                                                                                  QName serviceTemplateId,
-                                                                                  String csarName,
-                                                                                  String targetServiceInstancesUrlVar) {
-        String xpathQuery1 = "concat(substring-before(string($" + availableServiceInstanceUrlVar
+    public void initServiceInstancesURLVariableFromAvailableServiceInstanceUrlVar(final BPELPlan plan,
+                                                                                  final String availableServiceInstanceUrlVar,
+                                                                                  final QName serviceTemplateId,
+                                                                                  final String csarName,
+                                                                                  final String targetServiceInstancesUrlVar) {
+        final String xpathQuery1 = "concat(substring-before(string($" + availableServiceInstanceUrlVar
             + "),'csars'),'csars/','" + csarName + "','/servicetemplates/','"
             + URLEncoder.encode(URLEncoder.encode(serviceTemplateId.toString())) + "','/instances')";
         try {
@@ -741,11 +745,11 @@ public class SimplePlanBuilderServiceInstanceHandler extends AbstractServiceInst
             assignServiceInstancesUrl = plan.getBpelDocument().importNode(assignServiceInstancesUrl, true);
             appendToInitSequence(assignServiceInstancesUrl, plan);
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        catch (SAXException e) {
+        catch (final SAXException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

@@ -10,23 +10,20 @@ import java.util.Set;
 import javax.xml.namespace.QName;
 
 import org.opentosca.container.core.tosca.convention.Types;
-import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
-import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
 import org.opentosca.planbuilder.model.plan.AbstractActivity;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.Link;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.plan.ActivityType;
+import org.opentosca.planbuilder.model.plan.NodeTemplateActivity;
+import org.opentosca.planbuilder.model.plan.RelationshipTemplateActivity;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
-import org.opentosca.planbuilder.model.tosca.AbstractTopologyTemplate;
 import org.opentosca.planbuilder.model.utils.ModelUtils;
 
 public abstract class AbstractTerminationPlanBuilder extends AbstractSimplePlanBuilder {
-
-
 
     @Override
     public PlanType createdPlanType() {
@@ -44,8 +41,8 @@ public abstract class AbstractTerminationPlanBuilder extends AbstractSimplePlanB
 
     protected static AbstractPlan generateTOG(final String id, final AbstractDefinitions definitions,
                                               final AbstractServiceTemplate serviceTemplate,
-                                              Collection<AbstractNodeTemplate> nodes,
-                                              Collection<AbstractRelationshipTemplate> relations) {
+                                              final Collection<AbstractNodeTemplate> nodes,
+                                              final Collection<AbstractRelationshipTemplate> relations) {
 
         final Collection<AbstractActivity> activities = new ArrayList<>();
         final Set<Link> links = new HashSet<>();
@@ -64,8 +61,8 @@ public abstract class AbstractTerminationPlanBuilder extends AbstractSimplePlanB
             activities.add(activity);
 
             final QName baseType = ModelUtils.getRelationshipBaseType(relationshipTemplate);
-            AbstractActivity sourceActivity = mapping.get(relationshipTemplate.getSource());
-            AbstractActivity targetActivity = mapping.get(relationshipTemplate.getTarget());
+            final AbstractActivity sourceActivity = mapping.get(relationshipTemplate.getSource());
+            final AbstractActivity targetActivity = mapping.get(relationshipTemplate.getTarget());
 
             if (baseType.equals(Types.connectsToRelationType)) {
                 if (sourceActivity != null) {
@@ -76,14 +73,13 @@ public abstract class AbstractTerminationPlanBuilder extends AbstractSimplePlanB
                 }
             } else if (baseType.equals(Types.dependsOnRelationType) | baseType.equals(Types.hostedOnRelationType)
                 | baseType.equals(Types.deployedOnRelationType)) {
-                if (sourceActivity != null) {
-                    links.add(new Link(sourceActivity, activity));
+                    if (sourceActivity != null) {
+                        links.add(new Link(sourceActivity, activity));
+                    }
+                    if (targetActivity != null) {
+                        links.add(new Link(activity, targetActivity));
+                    }
                 }
-                if (targetActivity != null) {
-                    links.add(new Link(activity, targetActivity));
-                }
-            }
-
         }
 
         final AbstractPlan abstractTerminationPlan =
@@ -91,5 +87,4 @@ public abstract class AbstractTerminationPlanBuilder extends AbstractSimplePlanB
 
         return abstractTerminationPlan;
     }
-
 }
