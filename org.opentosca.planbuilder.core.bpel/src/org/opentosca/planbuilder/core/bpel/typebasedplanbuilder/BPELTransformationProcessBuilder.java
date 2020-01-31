@@ -7,6 +7,7 @@ import java.util.List;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opentosca.container.core.next.model.ServiceTemplateInstanceState;
 import org.opentosca.planbuilder.AbstractTransformingPlanbuilder;
 import org.opentosca.planbuilder.core.bpel.context.BPELPlanContext;
 import org.opentosca.planbuilder.core.bpel.handlers.BPELFinalizer;
@@ -256,16 +257,25 @@ public class BPELTransformationProcessBuilder extends AbstractTransformingPlanbu
                                                                   transformationBPELPlan.getBpelMainFlowElement(),
                                                                   "ADAPTING", serviceInstanceURL);
 
-        this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
-                                                                  transformationBPELPlan.getBpelMainSequenceOutputAssignElement(),
-                                                                  "CREATED", serviceInstanceURL);
+        if (planType.equals(PlanType.TERMINATE)) {
+            this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
+                                                                      transformationBPELPlan.getBpelMainSequenceOutputAssignElement(),
+                                                                      ServiceTemplateInstanceState.DELETED.toString(),
+                                                                      serviceInstanceURL);
+        } else {
+            this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
+                                                                      transformationBPELPlan.getBpelMainSequenceOutputAssignElement(),
+                                                                      ServiceTemplateInstanceState.CREATED.toString(),
+                                                                      serviceInstanceURL);
+        }
 
         this.serviceInstanceHandler.appendSetServiceInstanceStateAsChild(transformationBPELPlan,
                                                                          this.planHandler.getMainCatchAllFaultHandlerSequenceElement(transformationBPELPlan),
-                                                                         "ERROR", serviceInstanceURL);
+                                                                         ServiceTemplateInstanceState.ERROR.toString(),
+                                                                         serviceInstanceURL);
         this.serviceInstanceHandler.appendSetServiceInstanceStateAsChild(transformationBPELPlan,
                                                                          this.planHandler.getMainCatchAllFaultHandlerSequenceElement(transformationBPELPlan),
-                                                                         "FAILED",
+                                                                         ServiceTemplateInstanceState.FAILED.toString(),
                                                                          this.serviceInstanceHandler.findPlanInstanceUrlVariableName(transformationBPELPlan));
 
         this.finalizer.finalize(transformationBPELPlan);
@@ -447,16 +457,20 @@ public class BPELTransformationProcessBuilder extends AbstractTransformingPlanbu
 
         this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
                                                                   transformationBPELPlan.getBpelMainFlowElement(),
-                                                                  "MIGRATING", sourceServiceInstanceURL);
+                                                                  ServiceTemplateInstanceState.MIGRATING.toString(),
+                                                                  sourceServiceInstanceURL);
         this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
                                                                   transformationBPELPlan.getBpelMainFlowElement(),
-                                                                  "CREATING", targetServiceInstanceURL);
+                                                                  ServiceTemplateInstanceState.CREATING.toString(),
+                                                                  targetServiceInstanceURL);
         this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
                                                                   transformationBPELPlan.getBpelMainSequenceOutputAssignElement(),
-                                                                  "MIGRATED", sourceServiceInstanceURL);
+                                                                  ServiceTemplateInstanceState.MIGRATED.toString(),
+                                                                  sourceServiceInstanceURL);
         this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
                                                                   transformationBPELPlan.getBpelMainSequenceOutputAssignElement(),
-                                                                  "CREATED", targetServiceInstanceURL);
+                                                                  ServiceTemplateInstanceState.CREATED.toString(),
+                                                                  targetServiceInstanceURL);
 
         this.finalizer.finalize(transformationBPELPlan);
 
