@@ -70,7 +70,7 @@ public class BPELTransformationProcessBuilder extends AbstractTransformingPlanbu
             this.correlationHandler = new CorrelationIDInitializer();
         }
         catch (final ParserConfigurationException e) {
-            BPELBuildProcessBuilder.LOG.error("Error while initializing BuildPlanHandler", e);
+            LOG.error("Error while initializing BuildPlanHandler", e);
         }
         // TODO seems ugly
         this.propertyInitializer = new PropertyVariableHandler(this.planHandler);

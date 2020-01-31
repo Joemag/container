@@ -135,12 +135,15 @@ public class BPELDefrostProcessBuilder extends AbstractDefrostPlanBuilder {
         this.serviceInstanceInitializer.appendSetServiceInstanceState(newDefreezePlan,
                                                                       newDefreezePlan.getBpelMainSequenceOutputAssignElement(),
                                                                       "CREATED", serviceInstanceURLVarName);
-        
+
         this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newDefreezePlan,
-                                                                         this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newDefreezePlan),
-                                                                         "ERROR", serviceInstanceURLVarName);
-        this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newDefreezePlan, this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newDefreezePlan), "FAILED", this.serviceInstanceInitializer.findPlanInstanceUrlVariableName(newDefreezePlan));
-        
+                                                                             this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newDefreezePlan),
+                                                                             "ERROR", serviceInstanceURLVarName);
+        this.serviceInstanceInitializer.appendSetServiceInstanceStateAsChild(newDefreezePlan,
+                                                                             this.planHandler.getMainCatchAllFaultHandlerSequenceElement(newDefreezePlan),
+                                                                             "FAILED",
+                                                                             this.serviceInstanceInitializer.findPlanInstanceUrlVariableName(newDefreezePlan));
+
         this.finalizer.finalize(newDefreezePlan);
 
         BPELDefrostProcessBuilder.LOG.debug("Created Plan:");
@@ -203,8 +206,8 @@ public class BPELDefrostProcessBuilder extends AbstractDefrostPlanBuilder {
                 // if this nodeTemplate has the label running (Property: State=Running), skip
                 // provisioning and just generate instance data handling
                 if (isRunning(nodeTemplate)) {
-                    BPELBuildProcessBuilder.LOG.debug("Skipping the provisioning of NodeTemplate "
-                        + bpelScope.getNodeTemplate().getId() + "  beacuse state=running is set.");
+                    LOG.debug("Skipping the provisioning of NodeTemplate " + bpelScope.getNodeTemplate().getId()
+                        + "  beacuse state=running is set.");
                     for (final IPlanBuilderPostPhasePlugin postPhasePlugin : this.pluginRegistry.getPostPlugins()) {
                         if (postPhasePlugin.canHandleCreate(bpelScope.getNodeTemplate())) {
                             postPhasePlugin.handleCreate(context, bpelScope.getNodeTemplate());
