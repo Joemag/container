@@ -97,4 +97,8 @@ public class Types {
     // Policy Types
     public static final QName situationPolicyType =
         new QName("http://opentosca.org/servicetemplates/policytypes", "SituationPolicy_w1-wip1");
+    public static final QName statefulComponentPolicy =
+        new QName("http://opentosca.org/policytypes", "StatefulComponent");
+    public static final QName freezableComponentPolicy =
+        new QName("http://opentosca.org/policytypes", "FreezableComponent");
 }

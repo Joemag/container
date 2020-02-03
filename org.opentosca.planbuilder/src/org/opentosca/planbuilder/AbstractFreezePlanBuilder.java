@@ -26,15 +26,10 @@ import org.opentosca.planbuilder.model.utils.ModelUtils;
 
 public abstract class AbstractFreezePlanBuilder extends AbstractSimplePlanBuilder {
 
-    QName statefulComponentPolicy = new QName("http://opentosca.org/policytypes", "StatefulComponent");
-    QName freezableComponentPolicy = new QName("http://opentosca.org/policytypes", "FreezableComponent");
-
-
     @Override
     public PlanType createdPlanType() {
         return PlanType.TERMINATE;
     }
-
 
     protected AbstractPlan generateFOG(final String id, final AbstractDefinitions definitions,
                                        final AbstractServiceTemplate serviceTemplate) {
@@ -92,11 +87,11 @@ public abstract class AbstractFreezePlanBuilder extends AbstractSimplePlanBuilde
     }
 
     protected boolean hasStatefulComponentPolicy(final AbstractNodeTemplate nodeTemplate) {
-        return hasPolicy(nodeTemplate, this.statefulComponentPolicy);
+        return hasPolicy(nodeTemplate, Types.statefulComponentPolicy);
     }
 
     protected boolean hasFreezableComponentPolicy(final AbstractNodeTemplate nodeTemplate) {
-        return hasPolicy(nodeTemplate, this.freezableComponentPolicy);
+        return hasPolicy(nodeTemplate, Types.freezableComponentPolicy);
     }
 
     private boolean hasPolicy(final AbstractNodeTemplate nodeTemplate, final QName policyType) {

@@ -3,21 +3,16 @@ package org.opentosca.planbuilder;
 import org.opentosca.planbuilder.model.plan.AbstractPlan.PlanType;
 import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
 import org.opentosca.planbuilder.plugins.registry.PluginRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class AbstractPlanBuilder {
 
     protected final PluginRegistry pluginRegistry = new PluginRegistry();
 
-    private final static Logger LOG = LoggerFactory.getLogger(AbstractPlanBuilder.class);
-
     abstract public PlanType createdPlanType();
-
 
     public boolean isRunning(final AbstractNodeTemplate nodeTemplate) {
         if (nodeTemplate.getProperties() != null) {
-            String val = nodeTemplate.getProperties().asMap().get("State");
+            final String val = nodeTemplate.getProperties().asMap().get("State");
             return val != null && val.equals("Running");
         } else {
             return false;

@@ -30,15 +30,6 @@ public abstract class AbstractTerminationPlanBuilder extends AbstractSimplePlanB
         return PlanType.TERMINATE;
     }
 
-
-    protected AbstractPlan generateTOG(final String id, final AbstractDefinitions definitions,
-                                       final AbstractServiceTemplate serviceTemplate) {
-        return AbstractTerminationPlanBuilder.generateTOG(id, definitions, serviceTemplate,
-                                                          serviceTemplate.getTopologyTemplate().getNodeTemplates(),
-                                                          serviceTemplate.getTopologyTemplate()
-                                                                         .getRelationshipTemplates());
-    }
-
     protected static AbstractPlan generateTOG(final String id, final AbstractDefinitions definitions,
                                               final AbstractServiceTemplate serviceTemplate,
                                               final Collection<AbstractNodeTemplate> nodes,
