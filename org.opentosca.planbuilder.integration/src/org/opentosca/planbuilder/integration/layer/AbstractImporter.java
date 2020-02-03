@@ -12,7 +12,6 @@ import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELDefrostProce
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELFreezeProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELScaleOutProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELSituationAwareBuildProcessBuilder;
-import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTerminationProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTestManagementProcessBuilder;
 import org.opentosca.planbuilder.core.bpel.typebasedplanbuilder.BPELTransformationProcessBuilder;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
@@ -82,6 +81,23 @@ public abstract class AbstractImporter {
         return plans;
     }
 
+    protected List<AbstractPlan> buildTerminationPlans(final String sourceCsarName,
+                                                       final AbstractDefinitions sourceDefinitions) {
+        final List<AbstractPlan> plans = new ArrayList<>();
+
+        final BPELTransformationProcessBuilder transformPlanBuilder = new BPELTransformationProcessBuilder();
+
+        final AbstractServiceTemplate serviceTemplate = sourceDefinitions.getServiceTemplates().get(0);
+
+        plans.add(transformPlanBuilder.buildPlan(PlanType.TERMINATE, sourceCsarName, sourceDefinitions,
+                                                 serviceTemplate.getQName(), "OpenTOSCA-Lifecycle-Interface",
+                                                 "terminate", serviceTemplate.getTopologyTemplate().getNodeTemplates(),
+                                                 serviceTemplate.getTopologyTemplate().getRelationshipTemplates(),
+                                                 new ArrayList<AbstractNodeTemplate>(),
+                                                 new ArrayList<AbstractRelationshipTemplate>()));
+        return plans;
+    }
+
     /**
      * Generates Plans for ServiceTemplates inside the given Definitions document
      *
@@ -115,7 +131,6 @@ public abstract class AbstractImporter {
         // buildPlanBuilder = new PolicyAwareBPELBuildProcessBuilder();
         // }
 
-        final AbstractSimplePlanBuilder terminationPlanBuilder = new BPELTerminationProcessBuilder();
         final AbstractSimplePlanBuilder scalingPlanBuilder = new BPELScaleOutProcessBuilder();
 
         final AbstractSimplePlanBuilder freezePlanBuilder = new BPELFreezeProcessBuilder();
@@ -125,11 +140,11 @@ public abstract class AbstractImporter {
         final AbstractSimplePlanBuilder testPlanBuilder = new BPELTestManagementProcessBuilder();
 
         plans.addAll(scalingPlanBuilder.buildPlans(csarName, defs));
-        plans.addAll(terminationPlanBuilder.buildPlans(csarName, defs));
         plans.addAll(freezePlanBuilder.buildPlans(csarName, defs));
         plans.addAll(defreezePlanBuilder.buildPlans(csarName, defs));
         plans.addAll(backupPlanBuilder.buildPlans(csarName, defs));
         plans.addAll(testPlanBuilder.buildPlans(csarName, defs));
+        plans.addAll(buildTerminationPlans(csarName, defs));
 
         return plans;
     }
