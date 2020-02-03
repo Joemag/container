@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
@@ -32,6 +34,8 @@ import org.opentosca.planbuilder.model.tosca.AbstractNodeTypeImplementation;
 import org.opentosca.planbuilder.model.tosca.AbstractOperation;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractRelationshipType;
+import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
+import org.opentosca.planbuilder.model.tosca.AbstractTopologyTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -694,5 +698,57 @@ public class ModelUtils {
             LOG.error("Unable to find interface {} for NodeTemplate {}", interfaceName, nodeTemplate.getName());
             return null;
         }
+    }
+
+    /**
+     * Returns a List of AbstractNodeTemplate of the given TopologyTemplate with the given Ids.
+     *
+     * @param topology the TopologyTemplate to search in
+     * @param nodeIds the Ids of the NodeTemplates to search for
+     * @return a List with AbstractNodeTemplates
+     */
+    public static Collection<AbstractNodeTemplate> getNodesByIds(final AbstractTopologyTemplate topology,
+                                                                 final Collection<String> nodeIds) {
+        return topology.getNodeTemplates().stream().filter(node -> nodeIds.contains(node.getId()))
+                       .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns a List of AbstractRelationshipTemplate of the given TopologyTemplate with the given Ids.
+     *
+     * @param topology the TopologyTemplate to search in
+     * @param relationIds the Ids of the RelationshipTemplates to search for
+     * @return a List with AbstractRelationshipTemplate
+     */
+    public static Collection<AbstractRelationshipTemplate> getRelationsByIds(final AbstractTopologyTemplate topology,
+                                                                             final Collection<String> relationIds) {
+        return topology.getRelationshipTemplates().stream().filter(relation -> relationIds.contains(relation.getId()))
+                       .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns an AbstractNodeTemplate of the given ServiceTemplate and NodeTemplate Id.
+     *
+     * @param serviceTemplate the ServiceTemplate to search in
+     * @param nodeTemplateId the Id of the NodeTemplate
+     * @return an AbstractNodeTemplate with the specified Id, else <code>null</code>
+     */
+    public static AbstractNodeTemplate getNodeTemplateById(final AbstractServiceTemplate serviceTemplate,
+                                                           final String nodeTemplateId) {
+        return getNodesByIds(serviceTemplate.getTopologyTemplate(), Arrays.asList(nodeTemplateId)).stream().findFirst()
+                                                                                                  .orElse(null);
+    }
+
+    /**
+     * Returns an AbstractRelationshipTemplate of the given serviceTemplate and RelationshipTemplate Id.
+     *
+     * @param serviceTemplate the ServiceTemplate to search in
+     * @param relationshipTemplateId the If of the RelationshipTemplate to search for
+     * @return an AbstractRelationshipTemplate with the specified Id, else <code>null</code>
+     */
+    public static AbstractRelationshipTemplate getRelationshipTemplateById(final AbstractServiceTemplate serviceTemplate,
+                                                                           final String relationshipTemplateId) {
+        return getRelationsByIds(serviceTemplate.getTopologyTemplate(),
+                                 Arrays.asList(relationshipTemplateId)).stream().findFirst().orElse(null);
     }
 }

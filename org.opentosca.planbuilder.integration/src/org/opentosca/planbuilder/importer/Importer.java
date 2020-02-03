@@ -17,9 +17,8 @@ import org.opentosca.planbuilder.importer.context.impl.DefinitionsImpl;
 import org.opentosca.planbuilder.integration.layer.AbstractImporter;
 import org.opentosca.planbuilder.model.plan.AbstractPlan;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
-import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
-import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractTopologyTemplate;
+import org.opentosca.planbuilder.model.utils.ModelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,42 +74,16 @@ public class Importer extends AbstractImporter {
             final AbstractTopologyTemplate topology = defs.getServiceTemplates().get(0).getTopologyTemplate();
 
             return buildAdaptationPlan(csarId.getFileName(), defs, serviceTemplatId,
-                                       getNodes(topology, sourceNodeTemplateIds),
-                                       getRelations(topology, sourceRelationshipTemplateIds),
-                                       getNodes(topology, targetNodeTemplateId),
-                                       getRelations(topology, targetRelationshipTemplateId));
+                                       ModelUtils.getNodesByIds(topology, sourceNodeTemplateIds),
+                                       ModelUtils.getRelationsByIds(topology, sourceRelationshipTemplateIds),
+                                       ModelUtils.getNodesByIds(topology, targetNodeTemplateId),
+                                       ModelUtils.getRelationsByIds(topology, targetRelationshipTemplateId));
         }
         catch (final UserException e) {
             e.printStackTrace();
         }
 
         return null;
-    }
-
-    private Collection<AbstractNodeTemplate> getNodes(final AbstractTopologyTemplate topology,
-                                                      final Collection<String> nodeIds) {
-        final Collection<AbstractNodeTemplate> result = new ArrayList<>();
-
-        for (final AbstractNodeTemplate node : topology.getNodeTemplates()) {
-            if (nodeIds.contains(node.getId())) {
-                result.add(node);
-            }
-        }
-
-        return result;
-    }
-
-    private Collection<AbstractRelationshipTemplate> getRelations(final AbstractTopologyTemplate topology,
-                                                                  final Collection<String> relationIds) {
-        final Collection<AbstractRelationshipTemplate> result = new ArrayList<>();
-
-        for (final AbstractRelationshipTemplate relation : topology.getRelationshipTemplates()) {
-            if (relationIds.contains(relation.getId())) {
-                result.add(relation);
-            }
-        }
-
-        return result;
     }
 
     public List<AbstractPlan> generateTransformationPlans(final CSARID sourceCsarId, final CSARID targetCsarId) {
@@ -165,5 +138,4 @@ public class Importer extends AbstractImporter {
         final Set<AbstractFile> referencedFilesInCsar = csarContent.getFilesRecursively();
         return new DefinitionsImpl(rootTosca, referencedFilesInCsar, true);
     }
-
 }

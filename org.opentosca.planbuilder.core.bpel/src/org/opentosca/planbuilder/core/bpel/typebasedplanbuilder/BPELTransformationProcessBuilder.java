@@ -158,21 +158,18 @@ public class BPELTransformationProcessBuilder extends AbstractTransformingPlanbu
             this.serviceInstanceHandler.addServiceInstanceIDVariable(transformationBPELPlan);
         }
 
-        // add correlation id and handling for input and output
-        this.correlationHandler.addCorrellationID(transformationBPELPlan);
-
         // service instance handling
         final String sourceServiceInstancesURL =
             this.serviceInstanceHandler.addInstanceDataAPIURLVariable(transformationBPELPlan);
-
         final String serviceTemplateURL =
             this.serviceInstanceHandler.findServiceTemplateUrlVariableName(transformationBPELPlan);
-
         final String serviceInstanceID =
             this.serviceInstanceHandler.findServiceInstanceIdVarName(transformationBPELPlan);
-
         final String serviceInstanceURL =
             this.serviceInstanceHandler.findServiceInstanceUrlVariableName(transformationBPELPlan);
+
+        // add correlation id and handling for input and output
+        this.correlationHandler.addCorrellationID(transformationBPELPlan);
 
         // handle source instance information, e.g., load instance url/, template url and properties
         // append reading source service instance from input and setting created variables
@@ -252,23 +249,27 @@ public class BPELTransformationProcessBuilder extends AbstractTransformingPlanbu
                    serviceInstanceURL, serviceInstanceID, serviceTemplateURL, csarName, serviceTemplate,
                    serviceInstanceURL, serviceInstanceID, serviceTemplateURL);
 
-
-        this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
-                                                                  transformationBPELPlan.getBpelMainFlowElement(),
-                                                                  "ADAPTING", serviceInstanceURL);
-
+        // handle state information of the service instance
         if (planType.equals(PlanType.TERMINATE)) {
+            this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
+                                                                      transformationBPELPlan.getBpelMainFlowElement(),
+                                                                      ServiceTemplateInstanceState.DELETING.toString(),
+                                                                      serviceInstanceURL);
             this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
                                                                       transformationBPELPlan.getBpelMainSequenceOutputAssignElement(),
                                                                       ServiceTemplateInstanceState.DELETED.toString(),
                                                                       serviceInstanceURL);
         } else {
             this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
+                                                                      transformationBPELPlan.getBpelMainFlowElement(),
+                                                                      "ADAPTING", serviceInstanceURL);
+            this.serviceInstanceHandler.appendSetServiceInstanceState(transformationBPELPlan,
                                                                       transformationBPELPlan.getBpelMainSequenceOutputAssignElement(),
                                                                       ServiceTemplateInstanceState.CREATED.toString(),
                                                                       serviceInstanceURL);
         }
 
+        // add state information handling in the case of errors
         this.serviceInstanceHandler.appendSetServiceInstanceStateAsChild(transformationBPELPlan,
                                                                          this.planHandler.getMainCatchAllFaultHandlerSequenceElement(transformationBPELPlan),
                                                                          ServiceTemplateInstanceState.ERROR.toString(),
@@ -371,10 +372,8 @@ public class BPELTransformationProcessBuilder extends AbstractTransformingPlanbu
 
         final String planInstanceURL = this.serviceInstanceHandler.addPlanInstanceURLVariable(transformationBPELPlan);
 
-        // handle sourceinstance information, e.g., load instance url/, template url and
-        // properties
-        // append reading source service instance from input and setting created
-        // variables
+        // handle sourceinstance information, e.g., load instance url/, template url and properties
+        // append reading source service instance from input and setting created variables
         this.serviceInstanceHandler.addServiceInstanceHandlingFromInput(transformationBPELPlan,
                                                                         sourceServiceInstancesURL,
                                                                         sourceServiceInstanceURL,
@@ -632,12 +631,8 @@ public class BPELTransformationProcessBuilder extends AbstractTransformingPlanbu
                                                          targetNodeTemplate);
                         }
                     }
-
                 }
-                // if this nodeTemplate has the label running (Property: State=Running), skip
-                // provisioning and just generate instance data handlin
 
-                // generate code for the activity
             } else if (bpelScope.getRelationshipTemplate() != null) {
                 // handling relationshiptemplate
 

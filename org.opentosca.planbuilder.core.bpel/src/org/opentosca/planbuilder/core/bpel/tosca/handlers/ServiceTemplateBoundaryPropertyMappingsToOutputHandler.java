@@ -2,9 +2,7 @@ package org.opentosca.planbuilder.core.bpel.tosca.handlers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -15,12 +13,11 @@ import org.opentosca.planbuilder.core.bpel.handlers.BPELPlanHandler;
 import org.opentosca.planbuilder.model.plan.bpel.BPELPlan;
 import org.opentosca.planbuilder.model.tosca.AbstractBoundaryDefinitions;
 import org.opentosca.planbuilder.model.tosca.AbstractDefinitions;
-import org.opentosca.planbuilder.model.tosca.AbstractNodeTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractProperties;
 import org.opentosca.planbuilder.model.tosca.AbstractPropertyMapping;
-import org.opentosca.planbuilder.model.tosca.AbstractRelationshipTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplate;
 import org.opentosca.planbuilder.model.tosca.AbstractServiceTemplateProperties;
+import org.opentosca.planbuilder.model.utils.ModelUtils;
 import org.opentosca.planbuilder.plugins.context.Property2VariableMapping;
 import org.opentosca.planbuilder.plugins.context.PropertyVariable;
 import org.slf4j.Logger;
@@ -195,7 +192,7 @@ public class ServiceTemplateBoundaryPropertyMappingsToOutputHandler {
      */
     public void initializeBuildPlanOutput(final AbstractDefinitions definitions, final BPELPlan buildPlan,
                                           final Property2VariableMapping propMap,
-                                          AbstractServiceTemplate serviceTemplate) {
+                                          final AbstractServiceTemplate serviceTemplate) {
         final ServiceTemplatePropertyToPropertyMapping mapping = getMappings(serviceTemplate, propMap);
         if (mapping == null) {
             ServiceTemplateBoundaryPropertyMappingsToOutputHandler.LOG.warn("Couldn't generate mapping, BuildPlan Output may be empty");
@@ -216,7 +213,7 @@ public class ServiceTemplateBoundaryPropertyMappingsToOutputHandler {
      */
     private void initializeAssignOutput(final BPELPlan buildPlan, final Property2VariableMapping propMap,
                                         final ServiceTemplatePropertyToPropertyMapping mapping,
-                                        AbstractServiceTemplate serviceTemplate) {
+                                        final AbstractServiceTemplate serviceTemplate) {
         try {
             final BPELPlanHandler buildPlanHandler = new BPELPlanHandler();
             final BPELPlanHandler processHandler = new BPELPlanHandler();
@@ -251,7 +248,7 @@ public class ServiceTemplateBoundaryPropertyMappingsToOutputHandler {
                     }
 
                     boolean assigned = false;
-                    for (PropertyVariable var : propMap.getPropertyVariables(serviceTemplate, templateId)) {
+                    for (final PropertyVariable var : propMap.getPropertyVariables(serviceTemplate, templateId)) {
                         if (var.getPropertyName().equals(templatePropertyName)) {
                             assigned = true;
                             processHandler.assginOutputWithVariableValue(var.getVariableName(),
@@ -374,12 +371,12 @@ public class ServiceTemplateBoundaryPropertyMappingsToOutputHandler {
             } else {
                 Element templateElement = null;
 
-                if (getNodeTemplate(buildPlanServiceTemplate, templateId) != null) {
-                    templateElement =
-                        getNodeTemplate(buildPlanServiceTemplate, templateId).getProperties().getDOMElement();
-                } else if (getRelationshipTemplate(buildPlanServiceTemplate, templateId) != null) {
-                    templateElement =
-                        getRelationshipTemplate(buildPlanServiceTemplate, templateId).getProperties().getDOMElement();
+                if (ModelUtils.getNodeTemplateById(buildPlanServiceTemplate, templateId) != null) {
+                    templateElement = ModelUtils.getNodeTemplateById(buildPlanServiceTemplate, templateId)
+                                                .getProperties().getDOMElement();
+                } else if (ModelUtils.getRelationshipTemplateById(buildPlanServiceTemplate, templateId) != null) {
+                    templateElement = ModelUtils.getRelationshipTemplateById(buildPlanServiceTemplate, templateId)
+                                                .getProperties().getDOMElement();
                 }
 
                 if (templateElement == null) {
@@ -428,7 +425,7 @@ public class ServiceTemplateBoundaryPropertyMappingsToOutputHandler {
     }
 
     private String injectBPELVariables(final String targetPropertyRef, final Property2VariableMapping propMap,
-                                       AbstractServiceTemplate serviceTemplate) {
+                                       final AbstractServiceTemplate serviceTemplate) {
         final String testQuery = targetPropertyRef.trim();
 
         if (!testQuery.endsWith(")")) {
@@ -468,7 +465,7 @@ public class ServiceTemplateBoundaryPropertyMappingsToOutputHandler {
                 final String propertyName = queryParts[2];
 
                 boolean addedVar = false;
-                for (PropertyVariable var : propMap.getPropertyVariables(serviceTemplate, nodeTemplateName)) {
+                for (final PropertyVariable var : propMap.getPropertyVariables(serviceTemplate, nodeTemplateName)) {
                     if (var.getPropertyName().equals(propertyName)) {
                         addedVar = true;
                         augmentedFunctionParts.add("$" + var.getVariableName());
@@ -545,40 +542,4 @@ public class ServiceTemplateBoundaryPropertyMappingsToOutputHandler {
         }
         return null;
     }
-
-    /**
-     * Returns an AbstractNodeTemplate of the given serviceTemplate and TemplateId
-     *
-     * @param serviceTemplate the ServiceTemplate to search in
-     * @param templateId the Id of the Template
-     * @return an AbstractNodeTemplate with the specified Id, else null
-     */
-    private AbstractNodeTemplate getNodeTemplate(final AbstractServiceTemplate serviceTemplate,
-                                                 final String templateId) {
-        for (final AbstractNodeTemplate nodeTemplate : serviceTemplate.getTopologyTemplate().getNodeTemplates()) {
-            if (nodeTemplate.getId().equals(templateId)) {
-                return nodeTemplate;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Returns an AbstractRelationshipTemplate of the given serviceTemplate and TemplateId
-     *
-     * @param serviceTemplate the ServiceTemplate to search in
-     * @param templateId the If of the template to search for
-     * @return an AbstractRelationshipTemplate with the specified Id, else null
-     */
-    private AbstractRelationshipTemplate getRelationshipTemplate(final AbstractServiceTemplate serviceTemplate,
-                                                                 final String templateId) {
-        for (final AbstractRelationshipTemplate relationshipTemplate : serviceTemplate.getTopologyTemplate()
-                                                                                      .getRelationshipTemplates()) {
-            if (relationshipTemplate.getId().equals(templateId)) {
-                return relationshipTemplate;
-            }
-        }
-        return null;
-    }
-
 }
