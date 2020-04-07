@@ -74,11 +74,14 @@ public class TImplementationArtifact extends TExtensibleElements {
      *
      */
     public String getName() {
-        if (null == this.name) {
-            return this.getOtherAttributes().get(new QName(StaticTOSCANamespaces.nsToscaExtension, "name"));
+        String name = this.name;
+        if (name == null) {
+            name = this.getOtherAttributes().get(new QName(StaticTOSCANamespaces.nsToscaExtension, "name"));
+            if(name == null) {
+                name = this.getOtherAttributes().get(new QName("name"));
+            }            
         }
-
-        return this.name;
+        return name;
     }
 
     /**
