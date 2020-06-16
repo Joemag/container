@@ -50,7 +50,7 @@ public class Types {
         new QName("http://opentosca.org/nodetypes", "Ubuntu-VM_16.04-w1");
 
     public final static QName ubuntu1804ServerVmNodeType =
-        new QName("http://opentosca.org/nodetypes", "Ubuntu-VM_18.04-w1");
+        new QName("http://opentosca.org/nodetypes", "Ubuntu-VM_18.04");
 
     // FIXME: find a better way to support generated NodeTypes
     public final static QName ubuntu1804ServerVmNodeTypeGenerated =

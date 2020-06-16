@@ -205,9 +205,10 @@ public class Utils {
     public static boolean isSupportedVMNodeType(final QName nodeType) {
         return nodeType.equals(Types.ubuntu1404ServerVmNodeType) || nodeType.equals(Types.ubuntu1404ServerVmNodeType2)
             || nodeType.equals(Types.ubuntu1404ServerVmNodeType3) || nodeType.equals(Types.ubuntu1604ServerVmNodeType)
-            || nodeType.equals(Types.ubuntu1804ServerVmNodeType)
-            || nodeType.getNamespaceURI().equals(Types.ubuntu1804ServerVmNodeTypeGenerated.getNamespaceURI())
-                && nodeType.getLocalPart().startsWith(Types.ubuntu1804ServerVmNodeTypeGenerated.getLocalPart());
+            || (nodeType.getNamespaceURI().equals(Types.ubuntu1804ServerVmNodeType.getNamespaceURI())
+            		&& nodeType.getLocalPart().startsWith(Types.ubuntu1804ServerVmNodeType.getLocalPart()))
+            || (nodeType.getNamespaceURI().equals(Types.ubuntu1804ServerVmNodeTypeGenerated.getNamespaceURI())
+                && nodeType.getLocalPart().startsWith(Types.ubuntu1804ServerVmNodeTypeGenerated.getLocalPart()));
     }
 
     public static boolean isSupportedOSNodeType(final QName nodeType) {
